@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>분원 시설관리대장</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --navy:#1E3A66;
+    --navy-dark:#132844;
+    --gold:#A9790E;
+    --gold-light:#C9962B;
+    --bg:#F5F6F8;
+    --card:#FFFFFF;
+    --border:#E2E5EA;
+    --text:#242832;
+    --muted:#7A8090;
+    --danger:#D64545;
+    --danger-bg:#FDECEC;
+    --ok:#2E9E5B;
+    --wait:#E8A93C;
+    --hold:#8B8F99;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Pretendard","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);}
+  header{background:var(--navy);color:#fff;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;}
+  header h1{font-size:17px;margin:0;font-weight:800;letter-spacing:-.3px;}
+  header .sub{font-size:11px;color:#B9C4D6;margin-top:2px;font-weight:400;}
+  #cloud-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle;}
+  #cloud-dot.ok{background:#34C759;}
+  #cloud-dot.err{background:#FF3B30;}
+  #cloud-dot.loading{background:#FF9500;animation:pulse .8s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  .cloud-status{font-size:11px;color:#B9C4D6;display:flex;align-items:center;}
+
+  nav.tabs{display:flex;background:var(--navy-dark);position:sticky;top:58px;z-index:19;}
+  nav.tabs button{flex:1;padding:12px 8px;background:none;border:none;color:#9FB0CC;font-size:14px;font-weight:700;cursor:pointer;border-bottom:3px solid transparent;}
+  nav.tabs button.active{color:#fff;border-bottom-color:var(--gold);}
+
+  main{max-width:1500px;margin:0 auto;padding:16px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;}
+  .card h2{font-size:14px;margin:0 0 12px;font-weight:800;color:var(--navy);}
+  label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:10px 0 4px;}
+  select,input[type=text],input[type=date],textarea,input[type=password],input[type=number]{
+    width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;background:#fff;color:var(--text);
+  }
+  textarea{resize:vertical;min-height:64px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  button.primary{background:var(--gold);color:#fff;border:none;padding:11px 18px;border-radius:8px;font-weight:800;font-size:14px;cursor:pointer;margin-top:14px;}
+  button.primary:disabled{opacity:.5;}
+  button.secondary{background:#fff;color:var(--navy);border:1px solid var(--border);padding:8px 14px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;}
+  button.danger{background:#fff;color:#C0392B;border:1px solid #F3C9C4;padding:8px 14px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;margin-right:auto;}
+  button.small{padding:6px 10px;font-size:12px;border-radius:6px;}
+  .file-row{display:flex;align-items:center;gap:8px;margin-top:4px;}
+  .file-row img{height:40px;border-radius:6px;border:1px solid var(--border);}
+
+  .req-card{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;background:#fff;}
+  .req-card.overdue{border-color:var(--danger);background:var(--danger-bg);}
+  .req-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .req-cat{font-size:11px;font-weight:800;color:var(--navy);background:#EDF1F8;padding:3px 8px;border-radius:20px;}
+  .req-loc{font-size:12px;color:var(--muted);margin-top:4px;}
+  .req-body{font-size:13.5px;margin:8px 0;line-height:1.5;}
+  .req-meta{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;}
+  .badge{font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;color:#fff;white-space:nowrap;}
+  .badge.요청{background:#D9822B;}
+  .badge.접수{background:var(--wait);}
+  .badge.처리중{background:#3E7BD6;}
+  .badge.보류{background:var(--hold);}
+  .badge.완료{background:var(--ok);}
+  .badge.repeat{background:#B23A9E;}
+  .req-photo{margin-top:8px;}
+  .req-photo img{max-width:120px;border-radius:8px;border:1px solid var(--border);cursor:pointer;}
+  .handle-box{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);font-size:12.5px;color:var(--text);}
+  .handle-box b{color:var(--navy);}
+
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+  .filters select,.filters input{width:auto;flex:1;min-width:110px;}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+  .stat{background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;transition:.15s;}
+  .stat:hover{border-color:var(--navy);}
+  .stat.active{background:var(--navy);border-color:var(--navy);}
+  .stat.active .num,.stat.active .lab{color:#fff;}
+  .stat.warn.active{background:#B45309;border-color:#B45309;}
+  .stat .num{font-size:20px;font-weight:800;color:var(--navy);}
+  .stat .lab{font-size:11px;color:var(--muted);margin-top:2px;}
+  .stat.warn .num{color:var(--danger);}
+  .stat.warn.active .num{color:#fff;}
+
+  .login-box{max-width:320px;margin:60px auto;text-align:center;}
+  .empty{text-align:center;color:var(--muted);font-size:13px;padding:30px 0;}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(20,25,35,.5);display:none;align-items:center;justify-content:center;z-index:50;padding:16px;}
+  .modal-bg.show{display:flex;}
+  .modal{background:#fff;border-radius:14px;padding:20px;max-width:440px;width:100%;max-height:88vh;overflow-y:auto;}
+  .modal h3{margin:0 0 12px;font-size:15px;color:var(--navy);}
+  .modal-actions{display:flex;gap:8px;margin-top:16px;}
+  .modal-actions button{flex:1;}
+
+  .toggle-group{display:flex;gap:6px;margin-bottom:12px;}
+  .toggle-group button{flex:1;padding:9px 8px;border:1px solid var(--border);background:#fff;color:var(--navy);font-weight:700;font-size:13px;border-radius:8px;cursor:pointer;}
+  .toggle-group button.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+
+  .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;}
+  table.status-table{border-collapse:collapse;width:100%;font-size:12.5px;min-width:920px;}
+  table.status-table th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;white-space:nowrap;position:sticky;top:0;}
+  table.status-table td{padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis;vertical-align:top;}
+  table.status-table tr:nth-child(even){background:#FAFBFC;}
+  table.status-table tr.overdue{background:var(--danger-bg) !important;}
+  table.status-table td.wrap{white-space:normal;overflow-wrap:break-word;word-break:break-word;max-width:260px;}
+  .pager{display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:12.5px;color:var(--muted);}
+  .pager .pbtns{display:flex;gap:6px;}
+
+  @media (max-width:520px){
+    .stat-grid{grid-template-columns:repeat(2,1fr);}
+    .row2{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>바론네트웍스 시설관리대장</h1>
+    <div class="sub">분원 요청 · 총무팀 처리 기록 · <a href="https://varon2026.github.io/varon-links/" style="color:#B9C4DC;text-decoration:none;">← 바론링크로 돌아가기</a></div>
+  </div>
+  <div class="cloud-status"><span id="cloud-dot"></span><span id="cloud-text">연결 중</span></div>
+</header>
+
+<nav class="tabs">
+  <button id="tabBranchBtn" class="active" onclick="switchTab('branch')">분원 등록/조회</button>
+  <button id="tabStatusBtn" onclick="switchTab('status')">시설관리현황</button>
+  <button id="tabAdminBtn" onclick="switchTab('admin')">총무팀 관리</button>
+</nav>
+
+<main>
+
+  <!-- ===== 분원 뷰 ===== -->
+  <section id="branchView">
+    <div class="card">
+      <h2>분원 선택</h2>
+      <select id="myBranch" onchange="onBranchChange()"></select>
+    </div>
+
+    <div class="card">
+      <h2>새 요청 등록</h2>
+      <form id="registerForm" onsubmit="submitRequest(event)">
+        <label>작성일자</label>
+        <input type="date" id="f_date" required>
+
+        <label>점검항목</label>
+        <select id="f_category" required></select>
+
+        <label>위치</label>
+        <input type="text" id="f_location" placeholder="예: 3층 로비, 2강의실 등">
+
+        <label>요청 내용</label>
+        <textarea id="f_content" required placeholder="어떤 문제가 있는지 구체적으로 적어주세요"></textarea>
+
+        <label>요청자</label>
+        <input type="text" id="f_requester" required placeholder="이름">
+
+        <label>사진 첨부 (선택)</label>
+        <input type="file" id="f_photo" accept="image/*">
+        <div class="file-row" id="f_photo_preview"></div>
+
+        <button type="submit" class="primary" id="submitBtn">요청 등록</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>요청 내역 조회</h2>
+      <div class="filters">
+        <select id="viewBranchFilter" onchange="renderMyRequests()">
+          <option value="">전체 분원</option>
+        </select>
+        <select id="myStatusFilter" onchange="renderMyRequests()">
+          <option value="">전체 상태</option>
+        </select>
+        <select id="periodFilter" onchange="onPeriodChange()">
+          <option value="all">전체 기간</option>
+          <option value="month">이번 달</option>
+          <option value="last1m">최근 1개월</option>
+          <option value="last3m">최근 3개월</option>
+          <option value="year">최근 1년</option>
+          <option value="custom">기간 직접 설정</option>
+        </select>
+      </div>
+      <div class="filters" id="customPeriodRow" style="display:none">
+        <input type="date" id="periodFrom" onchange="renderMyRequests()">
+        <input type="date" id="periodTo" onchange="renderMyRequests()">
+      </div>
+      <div id="myRequestsList"><div class="empty">불러오는 중...</div></div>
+    </div>
+  </section>
+
+  <!-- ===== 시설관리현황 (전체 조회용) ===== -->
+  <section id="statusView" style="display:none">
+    <div class="card">
+      <h2>시설관리현황</h2>
+      <div class="toggle-group">
+        <button id="statusModeAllBtn" class="active" onclick="setStatusMode('all')">전체보기</button>
+        <button id="statusModeBranchBtn" onclick="setStatusMode('branch')">분원별보기</button>
+      </div>
+      <div class="filters">
+        <select id="st_branch" style="display:none" onchange="renderStatusTable()"></select>
+        <select id="st_pagesize" onchange="onPageSizeChange()">
+          <option value="20">20개씩</option>
+          <option value="30">30개씩</option>
+          <option value="40">40개씩</option>
+        </select>
+        <select id="st_sort" onchange="renderStatusTable()">
+          <option value="asc">오래된순</option>
+          <option value="desc" selected>최신순</option>
+        </select>
+        <input type="text" id="st_search" placeholder="위치/내용/요청자 검색" oninput="renderStatusTable()">
+      </div>
+
+      <div class="stat-grid" id="statusStatGrid"></div>
+      <div class="table-wrap">
+        <table class="status-table">
+          <thead>
+            <tr id="statusTableHead"></tr>
+          </thead>
+          <tbody id="statusTableBody"><tr><td>불러오는 중...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <span id="pagerInfo"></span>
+        <div class="pbtns">
+          <button class="secondary small" onclick="changePage(-1)">‹ 이전</button>
+          <button class="secondary small" onclick="changePage(1)">다음 ›</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section id="adminView" style="display:none">
+    <div id="loginBox" class="login-box">
+      <div class="card">
+        <h2>총무팀 비밀번호</h2>
+        <input type="password" id="adminPw" placeholder="비밀번호 입력">
+        <label style="display:flex;align-items:center;gap:6px;font-weight:400;margin-top:6px;">
+          <input type="checkbox" id="pwShowToggle" style="width:auto" onchange="document.getElementById('adminPw').type=this.checked?'text':'password'"> 비밀번호 보이기
+        </label>
+        <button class="primary" style="width:100%" onclick="tryAdminLogin()">입장</button>
+        <div id="loginErr" style="color:var(--danger);font-size:12px;margin-top:8px;"></div>
+      </div>
+    </div>
+
+    <div id="adminPanel" style="display:none">
+      <div class="stat-grid" id="statGrid"></div>
+
+      <div class="card">
+        <h2>월별 리포트</h2>
+        <div class="filters">
+          <input type="month" id="reportMonth">
+          <button class="secondary small" onclick="generateMonthlyReport()">리포트 생성 (엑셀)</button>
+        </div>
+        <div style="font-size:12px;color:var(--muted)">해당 월 요청 건수·완료율·총 비용·카테고리별/분원별 집계가 담긴 엑셀이 만들어져요.</div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <h2 style="margin:0">📥 과거기록 일괄 업로드</h2>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+          지정된 양식의 엑셀 파일을 올리면 여러 건을 한 번에 등록합니다. 먼저 <a href="#" onclick="downloadImportTemplate();return false;" style="color:var(--navy);font-weight:600;">업로드 양식(엑셀) 다운로드</a>로 형식을 확인하세요.
+        </div>
+        <div class="filters">
+          <button class="secondary small" onclick="document.getElementById('bulkImportFile').click()">엑셀 파일 선택</button>
+          <input type="file" id="bulkImportFile" accept=".xlsx,.xls" style="display:none" onchange="handleBulkImport(event)">
+        </div>
+        <div id="bulkImportStatus" style="font-size:12px;color:var(--muted);margin-top:8px;"></div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <h2 style="margin:0">전체 요청 목록</h2>
+          <button class="secondary small" onclick="exportExcel()">엑셀 내보내기</button>
+        </div>
+        <div class="filters">
+          <select id="af_branch" onchange="renderAdminList()"><option value="">전체 분원</option></select>
+          <select id="af_status" onchange="resetAdminQuickFilter()"><option value="">전체 상태</option></select>
+          <select id="af_category" onchange="renderAdminList()"><option value="">전체 항목</option></select>
+          <span style="align-self:center;font-size:12px;color:var(--muted);white-space:nowrap;">작성일자</span>
+          <input type="date" id="af_from" onchange="renderAdminList()">
+          <span style="align-self:center;color:var(--muted);">~</span>
+          <input type="date" id="af_to" onchange="renderAdminList()">
+        </div>
+        <div id="adminList"><div class="empty">불러오는 중...</div></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- 처리 입력 모달 -->
+<div class="modal-bg" id="editModalBg">
+  <div class="modal">
+    <h3>요청 처리</h3>
+    <div id="editModalMeta" style="font-size:12.5px;color:var(--muted);margin-bottom:10px;"></div>
+    <label>상태</label>
+    <select id="e_status"></select>
+    <label>처리 내용</label>
+    <textarea id="e_handle_content"></textarea>
+    <label>처리일자</label>
+    <input type="date" id="e_handled_date">
+    <label>확인자</label>
+    <input type="text" id="e_handler" placeholder="총무팀 담당자 이름">
+    <div class="row2">
+      <div><label>비용(원)</label><input type="number" id="e_cost" placeholder="0"></div>
+      <div><label>소모물품/비고</label><input type="text" id="e_items"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="danger" style="margin-top:0" onclick="deleteRequestAdmin()">삭제</button>
+      <button class="secondary" onclick="closeEditModal()">취소</button>
+      <button class="primary" style="margin-top:0" onclick="saveEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 분원 작성자용: 내가 쓴 요청 수정/삭제 모달 -->
+<div class="modal-bg" id="myEditModalBg">
+  <div class="modal">
+    <h3>내 요청 수정</h3>
+    <div id="myEditModalMeta" style="font-size:12.5px;color:var(--muted);margin-bottom:10px;"></div>
+    <label>분원</label>
+    <select id="me_branch"></select>
+    <label>점검항목</label>
+    <select id="me_category"></select>
+    <label>위치</label>
+    <input type="text" id="me_location" placeholder="예: 3층 로비, 2강의실 등">
+    <label>요청내용</label>
+    <textarea id="me_content"></textarea>
+    <label>작성자</label>
+    <input type="text" id="me_requester" placeholder="이름">
+    <div class="modal-actions">
+      <button class="danger" onclick="deleteMyRequest()">삭제</button>
+      <button class="secondary" onclick="closeMyEditModal()">취소</button>
+      <button class="primary" style="margin-top:0" onclick="saveMyEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 사진 크게 보기 모달 -->
+<div class="modal-bg" id="photoModalBg" onclick="this.classList.remove('show')">
+  <img id="photoModalImg" src="" style="max-width:100%;max-height:85vh;border-radius:10px;">
+</div>
+
+<script>
+/* ===================== 설정 ===================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyACokruLFwbkCpxriOdQgVZAQfryYBmUxM",
+  authDomain: "baron-shuttle-ops.firebaseapp.com",
+  projectId: "baron-shuttle-ops",
+  storageBucket: "baron-shuttle-ops.firebasestorage.app",
+  messagingSenderId: "278466071248",
+  appId: "1:278466071248:web:e22df780d05e6b46772cd5"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const FACILITY_COLLECTION = 'facility_log';
+
+// 총무팀 비밀번호 - 필요하면 이 값만 바꾸세요
+const ADMIN_PASSWORD = '2026';
+
+const BRANCHES = ['장안','서수원','수원','운정1','운정2','남동탄','바론'];
+const CATEGORIES = ['전기/조명','냉난방','누수/배관','도장/벽지/바닥','창호/방충망','가구/집기','청소/위생','보안/출입','인터넷/통신','PC/전자기기','기타'];
+const STATUSES = ['요청','접수','처리중','보류','완료'];
+const OVERDUE_STATUSES = ['요청','접수','처리중'];
+const OVERDUE_DAYS = 3;
+
+let allMyRequests = [];
+let allAdminRequests = [];
+let isAdmin = false;
+
+/* ===================== 초기화 ===================== */
+function fillSelect(sel, options, placeholder){
+  sel.innerHTML = (placeholder ? `<option value="">${placeholder}</option>` : '') +
+    options.map(o=>`<option value="${o}">${o}</option>`).join('');
+}
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  fillSelect(document.getElementById('myBranch'), BRANCHES);
+  fillSelect(document.getElementById('f_category'), CATEGORIES);
+  fillSelect(document.getElementById('myStatusFilter'), STATUSES, '전체 상태');
+  fillSelect(document.getElementById('viewBranchFilter'), BRANCHES, '전체 분원');
+  fillSelect(document.getElementById('af_branch'), BRANCHES, '전체 분원');
+  fillSelect(document.getElementById('af_status'), STATUSES, '전체 상태');
+  fillSelect(document.getElementById('af_category'), CATEGORIES, '전체 항목');
+  fillSelect(document.getElementById('e_status'), STATUSES);
+  fillSelect(document.getElementById('st_branch'), BRANCHES);
+
+  document.getElementById('f_date').value = todayStr();
+  document.getElementById('reportMonth').value = todayStr().slice(0,7);
+
+  document.getElementById('f_photo').addEventListener('change', (e)=>{
+    const f = e.target.files[0];
+    const box = document.getElementById('f_photo_preview');
+    box.innerHTML = f ? `<img src="${URL.createObjectURL(f)}"><span style="font-size:12px;color:var(--muted)">${f.name}</span>` : '';
+  });
+
+  setCloud('loading','연결 중');
+  loadMyRequests();
+});
+
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function daysSince(dateStr){
+  const d1 = new Date(dateStr); const d2 = new Date(todayStr());
+  return Math.floor((d2-d1)/(1000*60*60*24));
+}
+function setCloud(state,text){
+  document.getElementById('cloud-dot').className = state;
+  document.getElementById('cloud-text').textContent = text;
+}
+
+// 같은 분원+위치+점검항목이 2회 이상 반복되면, 2번째 이후 발생분에 발생 순번(2회,3회...)을 매핑
+function computeRepeatMap(rows){
+  const groups = {};
+  rows.forEach(r=>{
+    if(!r.location || !r.location.trim()) return;
+    const key = `${r.branch}|||${r.location.trim()}|||${r.category}`;
+    (groups[key] = groups[key] || []).push(r);
+  });
+  const map = {};
+  Object.values(groups).forEach(group=>{
+    if(group.length < 2) return;
+    const sorted = group.slice().sort((a,b)=> a.created_date < b.created_date ? -1 : a.created_date > b.created_date ? 1 : 0);
+    sorted.forEach((r,idx)=>{ if(idx>=1) map[r.id] = idx+1; });
+  });
+  return map;
+}
+function repeatBadge(n){
+  return n ? `<span class="badge repeat">반복 ${n}회</span>` : '';
+}
+
+/* ===================== 탭 전환 ===================== */
+function switchTab(tab){
+  document.getElementById('branchView').style.display = tab==='branch' ? 'block':'none';
+  document.getElementById('statusView').style.display = tab==='status' ? 'block':'none';
+  document.getElementById('adminView').style.display = tab==='admin' ? 'block':'none';
+  document.getElementById('tabBranchBtn').classList.toggle('active', tab==='branch');
+  document.getElementById('tabStatusBtn').classList.toggle('active', tab==='status');
+  document.getElementById('tabAdminBtn').classList.toggle('active', tab==='admin');
+  if(tab==='admin' && isAdmin) loadAdminRequests();
+  if(tab==='status') renderStatusTable();
+}
+
+function onBranchChange(){ /* 등록용 분원 선택 - 조회 필터와는 별개 */ }
+
+function onPeriodChange(){
+  const v = document.getElementById('periodFilter').value;
+  document.getElementById('customPeriodRow').style.display = v==='custom' ? 'flex' : 'none';
+  renderMyRequests();
+}
+
+function periodRange(){
+  const v = document.getElementById('periodFilter').value;
+  const today = new Date();
+  const fmt = d => d.toISOString().slice(0,10);
+  if(v==='month'){
+    const from = new Date(today.getFullYear(), today.getMonth(), 1);
+    return {from: fmt(from), to: todayStr()};
+  }
+  if(v==='last1m'){
+    const from = new Date(today); from.setMonth(from.getMonth()-1);
+    return {from: fmt(from), to: todayStr()};
+  }
+  if(v==='last3m'){
+    const from = new Date(today); from.setMonth(from.getMonth()-3);
+    return {from: fmt(from), to: todayStr()};
+  }
+  if(v==='year'){
+    const from = new Date(today); from.setFullYear(from.getFullYear()-1);
+    return {from: fmt(from), to: todayStr()};
+  }
+  if(v==='custom'){
+    return {from: document.getElementById('periodFrom').value, to: document.getElementById('periodTo').value};
+  }
+  return {from:'', to:''};
+}
+
+/* ===================== 시설관리현황 ===================== */
+let statusMode = 'all'; // 'all' | 'branch'
+let statusPage = 1;
+
+function setStatusMode(mode){
+  statusMode = mode;
+  document.getElementById('statusModeAllBtn').classList.toggle('active', mode==='all');
+  document.getElementById('statusModeBranchBtn').classList.toggle('active', mode==='branch');
+  document.getElementById('st_branch').style.display = mode==='branch' ? 'block' : 'none';
+  if(mode==='branch' && !document.getElementById('st_branch').value){
+    document.getElementById('st_branch').value = BRANCHES[0];
+  }
+  statusPage = 1;
+  renderStatusTable();
+}
+
+function onPageSizeChange(){ statusPage = 1; renderStatusTable(); }
+function changePage(delta){
+  const pageSize = Number(document.getElementById('st_pagesize').value);
+  const rows = statusFilteredRows();
+  const maxPage = Math.max(1, Math.ceil(rows.length / pageSize));
+  statusPage = Math.min(maxPage, Math.max(1, statusPage + delta));
+  renderStatusTable();
+}
+
+let overdueOnlyFilter = false;
+
+let stFilterStatuses = []; // 빈 배열 = 전체(필터 없음)
+
+function statusFilteredRows(){
+  const kw = document.getElementById('st_search').value.trim().toLowerCase();
+  const sort = document.getElementById('st_sort').value;
+
+  let rows = allMyRequests.slice();
+  if(statusMode==='branch'){
+    const b = document.getElementById('st_branch').value;
+    if(b) rows = rows.filter(r=>r.branch===b);
+  }
+  if(stFilterStatuses.length) rows = rows.filter(r=>stFilterStatuses.includes(r.status));
+  if(overdueOnlyFilter){
+    rows = rows.filter(r => (OVERDUE_STATUSES.includes(r.status)) && daysSince(r.created_date) >= OVERDUE_DAYS);
+  }
+  if(kw){
+    rows = rows.filter(r =>
+      (r.location||'').toLowerCase().includes(kw) ||
+      (r.request_content||'').toLowerCase().includes(kw) ||
+      (r.requester||'').toLowerCase().includes(kw)
+    );
+  }
+  rows.sort((a,b)=>{
+    const cmp = a.created_date < b.created_date ? -1 : a.created_date > b.created_date ? 1 : 0;
+    return sort==='asc' ? cmp : -cmp;
+  });
+  return rows;
+}
+
+function renderStatusTable(){
+  const showBranch = statusMode==='all';
+  const head = document.getElementById('statusTableHead');
+  head.innerHTML = `
+    <th>번호</th>${showBranch?'<th>분원</th>':''}<th>작성일자</th><th>점검항목</th><th>위치</th>
+    <th class="wrap" style="min-width:200px">요청내용</th><th>요청자</th><th>상태</th>
+    <th class="wrap" style="min-width:180px">처리내용</th><th>처리일자</th><th>확인자</th><th>비용</th><th class="wrap">비고</th>`;
+
+  const rows = statusFilteredRows();
+  const pageSize = Number(document.getElementById('st_pagesize').value);
+  const maxPage = Math.max(1, Math.ceil(rows.length / pageSize));
+  if(statusPage > maxPage) statusPage = maxPage;
+  const startIdx = (statusPage-1)*pageSize;
+  const pageRows = rows.slice(startIdx, startIdx+pageSize);
+
+  const body = document.getElementById('statusTableBody');
+  const repeatMap = computeRepeatMap(allMyRequests);
+  if(!pageRows.length){
+    body.innerHTML = `<tr><td colspan="12" style="text-align:center;color:var(--muted);padding:24px;">조건에 맞는 요청이 없습니다.</td></tr>`;
+  }else{
+    body.innerHTML = pageRows.map((r,i)=>{
+      const overdue = (OVERDUE_STATUSES.includes(r.status)) && daysSince(r.created_date) >= OVERDUE_DAYS;
+      return `<tr class="${overdue?'overdue':''}">
+        <td>${startIdx+i+1}</td>
+        ${showBranch?`<td>${r.branch}</td>`:''}
+        <td>${r.created_date}</td>
+        <td>${r.category} ${repeatBadge(repeatMap[r.id])}</td>
+        <td>${escapeHtml(r.location||'')}</td>
+        <td class="wrap" title="${escapeHtml(r.request_content||'')}">${escapeHtml(r.request_content||'')}</td>
+        <td>${escapeHtml(r.requester||'')}</td>
+        <td><span class="badge ${r.status}">${r.status}${overdue?(' D+'+daysSince(r.created_date)):''}</span></td>
+        <td class="wrap" title="${escapeHtml(r.handle_content||'')}">${escapeHtml(r.handle_content||'')}</td>
+        <td>${r.handled_date||''}</td>
+        <td>${escapeHtml(r.handler||'')}</td>
+        <td>${r.cost?Number(r.cost).toLocaleString():''}</td>
+        <td class="wrap" title="${escapeHtml(r.items_note||'')}">${escapeHtml(r.items_note||'')}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.getElementById('pagerInfo').textContent =
+    rows.length ? `${startIdx+1}-${Math.min(startIdx+pageSize, rows.length)} / 총 ${rows.length}건` : '0건';
+
+  const open = rows.filter(r=>OVERDUE_STATUSES.includes(r.status));
+  const overdueCnt = open.filter(r=>daysSince(r.created_date)>=OVERDUE_DAYS).length;
+  const done = rows.filter(r=>r.status==='완료').length;
+  document.getElementById('statusStatGrid').innerHTML = `
+    <div class="stat ${quickFilterMode==='all'?'active':''}" onclick="setStatQuickFilter('all')" style="cursor:pointer"><div class="num">${rows.length}</div><div class="lab">조건 내 전체</div></div>
+    <div class="stat ${quickFilterMode==='open'?'active':''}" onclick="setStatQuickFilter('open')" style="cursor:pointer"><div class="num">${open.length}</div><div class="lab">미처리</div></div>
+    <div class="stat warn ${quickFilterMode==='overdue'?'active':''}" onclick="setStatQuickFilter('overdue')" style="cursor:pointer"><div class="num">${overdueCnt}</div><div class="lab">3일 이상 지연</div></div>
+    <div class="stat ${quickFilterMode==='done'?'active':''}" onclick="setStatQuickFilter('done')" style="cursor:pointer"><div class="num">${done}</div><div class="lab">완료</div></div>
+  `;
+}
+
+let quickFilterMode = 'all';
+function setStatQuickFilter(mode){
+  quickFilterMode = mode;
+  if(mode === 'all'){
+    stFilterStatuses = [];
+    overdueOnlyFilter = false;
+  }else if(mode === 'open'){
+    stFilterStatuses = ['요청','접수','처리중'];
+    overdueOnlyFilter = false;
+  }else if(mode === 'overdue'){
+    stFilterStatuses = ['요청','접수','처리중'];
+    overdueOnlyFilter = true;
+  }else if(mode === 'done'){
+    stFilterStatuses = ['완료'];
+    overdueOnlyFilter = false;
+  }
+  renderStatusTable();
+}
+
+/* ===================== 분원: 등록 ===================== */
+function compressImage(file, maxDim=900, quality=0.55){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = ()=>{ img.onerror = reject; img.onload = ()=>{
+      let {width, height} = img;
+      if(width > height && width > maxDim){ height = Math.round(height*maxDim/width); width = maxDim; }
+      else if(height > maxDim){ width = Math.round(width*maxDim/height); height = maxDim; }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    }; img.src = reader.result; };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function submitRequest(e){
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = '등록 중...';
+  try{
+    const branch = document.getElementById('myBranch').value;
+    if(!branch){ alert('분원을 먼저 선택해주세요.'); btn.disabled=false; btn.textContent='요청 등록'; return; }
+
+    let photo_url = null;
+    const file = document.getElementById('f_photo').files[0];
+    if(file){
+      photo_url = await compressImage(file);
+      if(photo_url.length > 700000){
+        photo_url = await compressImage(file, 600, 0.4);
+      }
+    }
+
+    const payload = {
+      branch,
+      created_date: document.getElementById('f_date').value,
+      category: document.getElementById('f_category').value,
+      location: document.getElementById('f_location').value,
+      request_content: document.getElementById('f_content').value,
+      requester: document.getElementById('f_requester').value,
+      status: '요청',
+      photo_url,
+      created_at: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    await db.collection(FACILITY_COLLECTION).add(payload);
+
+    setCloud('ok','저장됨');
+    document.getElementById('registerForm').reset();
+    document.getElementById('f_date').value = todayStr();
+    document.getElementById('f_photo_preview').innerHTML='';
+    loadMyRequests();
+  }catch(err){
+    console.error(err);
+    setCloud('err','오류');
+    alert('등록 중 오류가 발생했습니다: ' + (err.message||err));
+  }finally{
+    btn.disabled = false; btn.textContent = '요청 등록';
+  }
+}
+
+/* ===================== 분원: 조회 ===================== */
+async function fetchAllFacilityRows(){
+  const snap = await db.collection(FACILITY_COLLECTION).get();
+  const rows = snap.docs.map(doc=>({ id: doc.id, ...doc.data() }));
+  rows.sort((a,b)=>{
+    if(a.created_date !== b.created_date) return a.created_date < b.created_date ? 1 : -1;
+    const at = a.created_at && a.created_at.toMillis ? a.created_at.toMillis() : 0;
+    const bt = b.created_at && b.created_at.toMillis ? b.created_at.toMillis() : 0;
+    return bt - at;
+  });
+  return rows;
+}
+
+async function loadMyRequests(){
+  try{
+    setCloud('loading','불러오는 중');
+    allMyRequests = await fetchAllFacilityRows();
+    setCloud('ok','연결됨');
+    renderMyRequests();
+    renderStatusTable();
+  }catch(err){
+    console.error(err);
+    setCloud('err','연결 실패');
+  }
+}
+
+function renderMyRequests(){
+  const branch = document.getElementById('viewBranchFilter').value;
+  const statusF = document.getElementById('myStatusFilter').value;
+  const {from, to} = periodRange();
+  const list = document.getElementById('myRequestsList');
+
+  let rows = allMyRequests.slice();
+  if(branch) rows = rows.filter(r=>r.branch===branch);
+  if(statusF) rows = rows.filter(r=>r.status===statusF);
+  if(from) rows = rows.filter(r=>r.created_date >= from);
+  if(to) rows = rows.filter(r=>r.created_date <= to);
+
+  if(!rows.length){ list.innerHTML = '<div class="empty">조건에 맞는 요청이 없습니다.</div>'; return; }
+  const repeatMap = computeRepeatMap(allMyRequests);
+  list.innerHTML = rows.map(r=>reqCardHtml(r, !branch, repeatMap[r.id])).join('');
+}
+
+function reqCardHtml(r, showBranch, repeatCount){
+  const overdue = (OVERDUE_STATUSES.includes(r.status)) && daysSince(r.created_date) >= OVERDUE_DAYS;
+  const handleBox = r.handle_content || r.handled_date || r.handler ? `
+    <div class="handle-box">
+      <div><b>처리내용</b> ${escapeHtml(r.handle_content||'-')}</div>
+      <div><b>처리일자</b> ${r.handled_date||'-'} &nbsp; <b>확인자</b> ${escapeHtml(r.handler||'-')}</div>
+      ${r.cost ? `<div><b>비용</b> ${Number(r.cost).toLocaleString()}원</div>`:''}
+      ${r.items_note ? `<div><b>비고</b> ${escapeHtml(r.items_note)}</div>`:''}
+    </div>` : '';
+  return `
+  <div class="req-card ${overdue?'overdue':''}">
+    <div class="req-top">
+      <div>
+        <span class="req-cat">${r.category}</span>
+        ${repeatBadge(repeatCount)}
+        ${showBranch? `<span class="req-cat" style="background:#F3EBD9;color:#8A6200;">${r.branch}</span>`:''}
+        <div class="req-loc">${escapeHtml(r.location||'')}</div>
+      </div>
+      <span class="badge ${r.status}">${r.status}${overdue?(' D+'+daysSince(r.created_date)):''}</span>
+    </div>
+    <div class="req-body">${escapeHtml(r.request_content)}</div>
+    ${r.photo_url ? `<div class="req-photo"><img src="${r.photo_url}" onclick="showPhoto('${r.photo_url}')"></div>`:''}
+    <div class="req-meta">
+      <span>작성 ${r.created_date} · ${escapeHtml(r.requester||'')}</span>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:8px;">
+      <button type="button" class="secondary small" onclick="openMyEditModal('${r.id}')">✏️ 수정</button>
+    </div>
+    ${handleBox}
+  </div>`;
+}
+
+let myEditingId = null;
+function openMyEditModal(id){
+  const r = allMyRequests.find(x=>x.id===id);
+  if(!r) return;
+  myEditingId = id;
+  document.getElementById('myEditModalMeta').textContent = `${r.created_date} 작성 · 현재 상태: ${r.status}`;
+  const branchSel = document.getElementById('me_branch');
+  branchSel.innerHTML = BRANCHES.map(b=>`<option value="${b}" ${b===r.branch?'selected':''}>${b}</option>`).join('');
+  const catSel = document.getElementById('me_category');
+  catSel.innerHTML = CATEGORIES.map(c=>`<option value="${c}" ${c===r.category?'selected':''}>${c}</option>`).join('');
+  document.getElementById('me_location').value = r.location || '';
+  document.getElementById('me_content').value = r.request_content || '';
+  document.getElementById('me_requester').value = r.requester || '';
+  document.getElementById('myEditModalBg').classList.add('show');
+}
+function closeMyEditModal(){
+  document.getElementById('myEditModalBg').classList.remove('show');
+  myEditingId = null;
+}
+async function saveMyEdit(){
+  if(!myEditingId) return;
+  const payload = {
+    branch: document.getElementById('me_branch').value,
+    category: document.getElementById('me_category').value,
+    location: document.getElementById('me_location').value,
+    request_content: document.getElementById('me_content').value,
+    requester: document.getElementById('me_requester').value,
+  };
+  try{
+    await db.collection(FACILITY_COLLECTION).doc(myEditingId).update(payload);
+    closeMyEditModal();
+    await Promise.all([loadAdminRequests(), loadMyRequests()]);
+  }catch(err){
+    alert('저장 중 오류: ' + (err.message||err));
+  }
+}
+async function deleteMyRequest(){
+  if(!myEditingId) return;
+  if(!confirm('이 요청을 삭제하시겠습니까? 되돌릴 수 없습니다.')) return;
+  try{
+    await db.collection(FACILITY_COLLECTION).doc(myEditingId).delete();
+    closeMyEditModal();
+    await Promise.all([loadAdminRequests(), loadMyRequests()]);
+  }catch(err){
+    alert('삭제 중 오류: ' + (err.message||err));
+  }
+}
+
+function escapeHtml(s){
+  if(!s) return '';
+  return s.replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function showPhoto(url){
+  document.getElementById('photoModalImg').src = url;
+  document.getElementById('photoModalBg').classList.add('show');
+}
+
+/* ===================== 총무팀: 로그인 ===================== */
+function tryAdminLogin(){
+  const pw = document.getElementById('adminPw').value.trim();
+  if(pw === ADMIN_PASSWORD){
+    isAdmin = true;
+    document.getElementById('loginBox').style.display='none';
+    document.getElementById('adminPanel').style.display='block';
+    loadAdminRequests();
+  }else{
+    document.getElementById('loginErr').textContent = '비밀번호가 올바르지 않습니다.';
+  }
+}
+
+/* ===================== 총무팀: 목록/대시보드 ===================== */
+async function loadAdminRequests(){
+  try{
+    setCloud('loading','불러오는 중');
+    allAdminRequests = await fetchAllFacilityRows();
+    setCloud('ok','연결됨');
+    renderStats();
+    renderAdminList();
+  }catch(err){
+    console.error(err);
+    setCloud('err','연결 실패');
+  }
+}
+
+function renderStats(){
+  const rows = allAdminRequests;
+  const open = rows.filter(r=>OVERDUE_STATUSES.includes(r.status));
+  const overdue = open.filter(r=>daysSince(r.created_date)>=OVERDUE_DAYS);
+  const done = rows.filter(r=>r.status==='완료');
+  const grid = document.getElementById('statGrid');
+  grid.innerHTML = `
+    <div class="stat ${adminQuickFilterMode==='all'?'active':''}" onclick="setAdminQuickFilter('all')" style="cursor:pointer"><div class="num">${rows.length}</div><div class="lab">전체 요청</div></div>
+    <div class="stat ${adminQuickFilterMode==='open'?'active':''}" onclick="setAdminQuickFilter('open')" style="cursor:pointer"><div class="num">${open.length}</div><div class="lab">미처리(요청/접수/처리중)</div></div>
+    <div class="stat warn ${adminQuickFilterMode==='overdue'?'active':''}" onclick="setAdminQuickFilter('overdue')" style="cursor:pointer"><div class="num">${overdue.length}</div><div class="lab">3일 이상 지연</div></div>
+    <div class="stat ${adminQuickFilterMode==='done'?'active':''}" onclick="setAdminQuickFilter('done')" style="cursor:pointer"><div class="num">${done.length}</div><div class="lab">완료</div></div>
+  `;
+}
+
+let adminQuickFilterMode = 'all';
+let adminFilterStatuses = [];
+let adminOverdueOnlyFilter = false;
+
+function setAdminQuickFilter(mode){
+  adminQuickFilterMode = mode;
+  document.getElementById('af_status').value = '';
+  if(mode === 'all'){ adminFilterStatuses = []; adminOverdueOnlyFilter = false; }
+  else if(mode === 'open'){ adminFilterStatuses = ['요청','접수','처리중']; adminOverdueOnlyFilter = false; }
+  else if(mode === 'overdue'){ adminFilterStatuses = ['요청','접수','처리중']; adminOverdueOnlyFilter = true; }
+  else if(mode === 'done'){ adminFilterStatuses = ['완료']; adminOverdueOnlyFilter = false; }
+  renderStats();
+  renderAdminList();
+}
+function resetAdminQuickFilter(){
+  adminQuickFilterMode = ''; adminFilterStatuses = []; adminOverdueOnlyFilter = false;
+  renderStats();
+  renderAdminList();
+}
+
+function currentAdminFilters(){
+  return {
+    branch: document.getElementById('af_branch').value,
+    status: document.getElementById('af_status').value,
+    category: document.getElementById('af_category').value,
+    from: document.getElementById('af_from').value,
+    to: document.getElementById('af_to').value
+  };
+}
+
+function filteredAdminRows(){
+  const f = currentAdminFilters();
+  return allAdminRequests.filter(r=>{
+    if(f.branch && r.branch!==f.branch) return false;
+    if(adminFilterStatuses.length){ if(!adminFilterStatuses.includes(r.status)) return false; }
+    else if(f.status && r.status!==f.status) return false;
+    if(adminOverdueOnlyFilter && daysSince(r.created_date) < OVERDUE_DAYS) return false;
+    if(f.category && r.category!==f.category) return false;
+    if(f.from && r.created_date < f.from) return false;
+    if(f.to && r.created_date > f.to) return false;
+    return true;
+  });
+}
+
+function renderAdminList(){
+  const rows = filteredAdminRows();
+  const list = document.getElementById('adminList');
+  const repeatMap = computeRepeatMap(allAdminRequests);
+  if(!rows.length){ list.innerHTML = '<div class="empty">조건에 맞는 요청이 없습니다.</div>'; return; }
+  list.innerHTML = rows.map(r=>{
+    const overdue = (OVERDUE_STATUSES.includes(r.status)) && daysSince(r.created_date) >= OVERDUE_DAYS;
+    return `
+    <div class="req-card ${overdue?'overdue':''}" onclick="openEditModal('${r.id}')" style="cursor:pointer">
+      <div class="req-top">
+        <div>
+          <span class="req-cat">${r.category}</span>
+          ${repeatBadge(repeatMap[r.id])}
+          <span class="req-cat" style="background:#F3EBD9;color:#8A6200;">${r.branch}</span>
+          <div class="req-loc">${escapeHtml(r.location||'')}</div>
+        </div>
+        <span class="badge ${r.status}">${r.status}${overdue?(' D+'+daysSince(r.created_date)):''}</span>
+      </div>
+      <div class="req-body">${escapeHtml(r.request_content)}</div>
+      ${r.photo_url ? `<div class="req-photo"><img src="${r.photo_url}" onclick="event.stopPropagation();showPhoto('${r.photo_url}')"></div>`:''}
+      ${r.status==='요청' ? `<button type="button" class="secondary small" style="margin-top:8px;" onclick="event.stopPropagation();quickAcknowledge('${r.id}')">✅ 접수 확인</button>` : ''}
+      <div class="req-meta"><span>작성 ${r.created_date} · ${escapeHtml(r.requester||'')}</span><span>탭하여 처리 입력 ›</span></div>
+    </div>`;
+  }).join('');
+}
+
+async function quickAcknowledge(id){
+  await db.collection(FACILITY_COLLECTION).doc(id).update({ status: '접수' });
+  await Promise.all([loadAdminRequests(), loadMyRequests()]);
+}
+
+/* ===================== 총무팀: 처리 입력 모달 ===================== */
+let editingId = null;
+function openEditModal(id){
+  const r = allAdminRequests.find(x=>x.id===id);
+  if(!r) return;
+  editingId = id;
+  document.getElementById('editModalMeta').textContent = `${r.branch} · ${r.category} · ${r.location||''} · ${r.created_date} 접수 (${escapeHtml(r.requester||'')})`;
+  document.getElementById('e_status').value = r.status;
+  document.getElementById('e_handle_content').value = r.handle_content || '';
+  document.getElementById('e_handled_date').value = r.handled_date || '';
+  document.getElementById('e_handler').value = r.handler || '';
+  document.getElementById('e_cost').value = r.cost || '';
+  document.getElementById('e_items').value = r.items_note || '';
+  document.getElementById('editModalBg').classList.add('show');
+}
+function closeEditModal(){
+  document.getElementById('editModalBg').classList.remove('show');
+  editingId = null;
+}
+async function deleteRequestAdmin(){
+  if(!editingId) return;
+  if(!confirm('이 요청을 완전히 삭제하시겠습니까? 되돌릴 수 없습니다.')) return;
+  try{
+    await db.collection(FACILITY_COLLECTION).doc(editingId).delete();
+    closeEditModal();
+    await Promise.all([loadAdminRequests(), loadMyRequests()]);
+  }catch(err){
+    alert('삭제 중 오류: ' + (err.message||err));
+  }
+}
+async function saveEdit(){
+  if(!editingId) return;
+  const status = document.getElementById('e_status').value;
+  const handled_date = document.getElementById('e_handled_date').value || (status==='완료' ? todayStr() : null);
+  const payload = {
+    status,
+    handle_content: document.getElementById('e_handle_content').value,
+    handled_date,
+    handler: document.getElementById('e_handler').value,
+    cost: document.getElementById('e_cost').value ? Number(document.getElementById('e_cost').value) : null,
+    items_note: document.getElementById('e_items').value
+  };
+  try{
+    await db.collection(FACILITY_COLLECTION).doc(editingId).update(payload);
+    closeEditModal();
+    await Promise.all([loadAdminRequests(), loadMyRequests()]);
+  }catch(err){
+    alert('저장 중 오류: ' + (err.message||err));
+  }
+}
+
+/* ===================== 월별 리포트 ===================== */
+function generateMonthlyReport(){
+  const monthVal = document.getElementById('reportMonth').value; // 'YYYY-MM'
+  if(!monthVal){ alert('연/월을 선택해주세요.'); return; }
+  const rows = allAdminRequests.filter(r=>r.created_date && r.created_date.startsWith(monthVal));
+  if(!rows.length){ alert('해당 월에 등록된 요청이 없습니다.'); return; }
+
+  const total = rows.length;
+  const done = rows.filter(r=>r.status==='완료').length;
+  const totalCost = rows.reduce((s,r)=> s + (Number(r.cost)||0), 0);
+
+  const byCategory = {}; CATEGORIES.forEach(c=>byCategory[c]=0);
+  rows.forEach(r=>{ byCategory[r.category] = (byCategory[r.category]||0)+1; });
+
+  const byBranch = {}; BRANCHES.forEach(b=>byBranch[b]={count:0, cost:0});
+  rows.forEach(r=>{
+    if(!byBranch[r.branch]) byBranch[r.branch] = {count:0, cost:0};
+    byBranch[r.branch].count++;
+    byBranch[r.branch].cost += Number(r.cost)||0;
+  });
+
+  const summaryRows = [
+    {항목:'대상 월', 값: monthVal},
+    {항목:'전체 요청 건수', 값: total},
+    {항목:'완료 건수', 값: done},
+    {항목:'미완료 건수', 값: total-done},
+    {항목:'완료율', 값: `${Math.round(done/total*100)}%`},
+    {항목:'총 비용(원)', 값: totalCost.toLocaleString()},
+    {항목:'', 값:''},
+    {항목:'[카테고리별 건수]', 값:''},
+    ...Object.entries(byCategory).filter(([,v])=>v>0).map(([k,v])=>({항목:k, 값:v})),
+    {항목:'', 값:''},
+    {항목:'[분원별 건수 / 비용]', 값:''},
+    ...Object.entries(byBranch).filter(([,v])=>v.count>0).map(([k,v])=>({항목:k, 값:`${v.count}건 / ${v.cost.toLocaleString()}원`}))
+  ];
+
+  const detailRows = rows.slice().sort((a,b)=> a.created_date < b.created_date ? -1 : 1).map((r,i)=>({
+    '번호': i+1, '분원': r.branch, '작성일자': r.created_date, '점검항목': r.category,
+    '위치': r.location||'', '요청내용': r.request_content||'', '요청자': r.requester||'',
+    '상태': r.status, '처리내용': r.handle_content||'', '처리일자': r.handled_date||'',
+    '확인자': r.handler||'', '비용': r.cost||'', '소모물품/비고': r.items_note||''
+  }));
+
+  const wsSummary = XLSX.utils.json_to_sheet(summaryRows, {skipHeader:false});
+  wsSummary['!cols'] = [{wch:22},{wch:30}];
+  const wsDetail = XLSX.utils.json_to_sheet(detailRows);
+  wsDetail['!cols'] = [6,8,10,14,14,34,10,8,26,10,10,10,20].map(w=>({wch:w}));
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, wsSummary, '월간요약');
+  XLSX.utils.book_append_sheet(wb, wsDetail, '상세내역');
+  XLSX.writeFile(wb, `시설관리_월간리포트_${monthVal}.xlsx`);
+}
+
+/* ===================== 엑셀 내보내기 ===================== */
+function exportExcel(){
+  const rows = filteredAdminRows();
+  if(!rows.length){ alert('내보낼 데이터가 없습니다.'); return; }
+  const sheetRows = rows.map((r,i)=>({
+    '번호': i+1,
+    '분원': r.branch,
+    '작성일자': r.created_date,
+    '점검항목': r.category,
+    '위치': r.location||'',
+    '요청내용': r.request_content||'',
+    '요청자': r.requester||'',
+    '상태': r.status,
+    '처리내용': r.handle_content||'',
+    '처리일자': r.handled_date||'',
+    '확인자': r.handler||'',
+    '비용': r.cost||'',
+    '소모물품/비고': r.items_note||''
+  }));
+  const ws = XLSX.utils.json_to_sheet(sheetRows);
+  ws['!cols'] = [6,8,10,14,14,34,10,8,26,10,10,10,20].map(w=>({wch:w}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '시설관리대장');
+  XLSX.writeFile(wb, `시설관리대장_${todayStr()}.xlsx`);
+}
+
+/* ===================== 과거기록 일괄 업로드 ===================== */
+function downloadImportTemplate(){
+  const headers = ['분원','작성일자','점검항목','위치','요청내용','요청자','상태','처리내용','처리일자','확인자','소모비용','비고'];
+  const sample = ['장안','2026-02-21','가구/집기','J강의실','[손잡이] 손잡이 파손','박치옥','완료','창고 손잡이로 대체','2026-02-21','장완','','← 입력 예시(삭제 후 실제 데이터 입력)'];
+  const rows = [headers, sample];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [8,12,12,14,30,10,8,26,12,10,10,26].map(w=>({wch:w}));
+
+  const dvBranch = { type:'list', formula1:`"${BRANCHES.join(',')}"`, allowBlank:true };
+  const dvCategory = { type:'list', formula1:`"${CATEGORIES.join(',')}"`, allowBlank:true };
+  const dvStatus = { type:'list', formula1:`"${STATUSES.join(',')}"`, allowBlank:true };
+  ws['!dataValidations'] = [
+    { sqref:'A3:A500', ...dvBranch },
+    { sqref:'C3:C500', ...dvCategory },
+    { sqref:'G3:G500', ...dvStatus },
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '업로드양식');
+  XLSX.writeFile(wb, '시설관리대장_업로드양식.xlsx');
+}
+
+async function handleBulkImport(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const statusEl = document.getElementById('bulkImportStatus');
+  statusEl.textContent = '읽는 중...';
+  try{
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data, { type:'array', cellDates:true });
+    const wsName = wb.SheetNames.includes('업로드양식') ? '업로드양식' : wb.SheetNames[0];
+    const aoa = XLSX.utils.sheet_to_json(wb.Sheets[wsName], { header:1, defval:'' });
+    const headers = aoa[0] || [];
+    const dataRows = aoa.slice(2); // 0=헤더, 1=예시행 → 3행부터 실제 데이터
+    const idx = (name) => headers.indexOf(name);
+
+    const toDateStr = (v) => {
+      if(!v) return '';
+      if(v instanceof Date) return v.toISOString().slice(0,10);
+      const s = String(v).trim();
+      const m = s.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})$/);
+      if(m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+      return s;
+    };
+
+    const records = dataRows
+      .filter(r => r.some(v => String(v).trim() !== ''))
+      .map(r => {
+        const branch = r[idx('분원')] || '';
+        const category = r[idx('점검항목')] || '기타';
+        const status = r[idx('상태')] || '접수';
+        const cost = r[idx('소모비용')];
+        return {
+          branch,
+          created_date: toDateStr(r[idx('작성일자')]),
+          category: CATEGORIES.includes(category) ? category : '기타',
+          location: r[idx('위치')] || '',
+          request_content: r[idx('요청내용')] || '',
+          requester: r[idx('요청자')] || '',
+          status: STATUSES.includes(status) ? status : '접수',
+          photo_url: null,
+          handle_content: r[idx('처리내용')] || '',
+          handled_date: toDateStr(r[idx('처리일자')]) || null,
+          handler: r[idx('확인자')] || '',
+          cost: cost ? Number(String(cost).replace(/[^0-9.-]/g,'')) || null : null,
+          items_note: r[idx('비고')] || '',
+          created_at: firebase.firestore.FieldValue.serverTimestamp(),
+        };
+      })
+      .filter(rec => rec.branch && BRANCHES.includes(rec.branch));
+
+    if(records.length === 0){
+      statusEl.textContent = '가져올 유효한 행이 없습니다. 분원명이 정확한지 확인해주세요.';
+      return;
+    }
+
+    statusEl.textContent = `${records.length}건 업로드 중...`;
+    const CHUNK = 400; // Firestore batch 제한(500) 이내로 나눠서 처리
+    for(let i=0; i<records.length; i+=CHUNK){
+      const batch = db.batch();
+      records.slice(i, i+CHUNK).forEach(rec => {
+        const ref = db.collection(FACILITY_COLLECTION).doc();
+        batch.set(ref, rec);
+      });
+      await batch.commit();
+    }
+    statusEl.textContent = `✅ ${records.length}건 업로드 완료 (${new Date().toLocaleTimeString('ko-KR')})`;
+    event.target.value = '';
+    loadAdminRequests();
+    loadMyRequests();
+  }catch(err){
+    console.error(err);
+    statusEl.textContent = '업로드 실패: ' + (err.message || err);
+  }
+}
+</script>
+</body>
+</html>

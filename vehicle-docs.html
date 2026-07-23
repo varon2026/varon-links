@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>차량·기사 서류정비 진행관리</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+  :root{
+    --navy:#1E3A66; --navy-dark:#132844; --gold:#A9790E; --gold-light:#C9962B;
+    --bg:#F5F6F8; --card:#FFFFFF; --border:#E2E5EA; --text:#242832; --muted:#7A8090;
+    --danger:#D64545; --danger-bg:#FDECEC; --ok:#2E9E5B; --wait:#E8A93C; --hold:#8B8F99;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Pretendard","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);}
+  header{background:var(--navy);color:#fff;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30;}
+  header h1{font-size:17px;margin:0;font-weight:800;letter-spacing:-.3px;}
+  header .sub{font-size:11px;color:#B9C4D6;margin-top:2px;font-weight:400;}
+  .cloud-status{font-size:11px;color:#B9C4D6;display:flex;align-items:center;gap:6px;}
+  #cloud-dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  #cloud-dot.ok{background:#34C759;} #cloud-dot.err{background:#FF3B30;}
+  #cloud-dot.loading{background:#FF9500;animation:pulse .8s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+  main{max-width:980px;margin:0 auto;padding:16px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;}
+  .card h2{font-size:14px;margin:0 0 12px;font-weight:800;color:var(--navy);}
+
+  /* 알림 배너 */
+  .alert-banner{border:1.5px solid var(--danger);background:var(--danger-bg);border-radius:12px;padding:14px 16px;margin-bottom:14px;}
+  .alert-banner h2{color:var(--danger);margin:0 0 8px;font-size:13.5px;}
+  .alert-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-top:1px dashed #F1C9C9;}
+  .alert-row:first-of-type{border-top:none;}
+  .alert-days{font-weight:800;color:var(--danger);}
+
+  /* 프로세스 지도 */
+  .stage-map{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;}
+  .stage-pill{flex:1;min-width:118px;border:1.5px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;position:relative;}
+  .stage-pill.current{border-color:var(--gold);background:#FBF4E4;}
+  .stage-pill .num{font-size:10px;font-weight:800;color:var(--muted);}
+  .stage-pill.current .num{color:var(--gold);}
+  .stage-pill .name{font-size:12px;font-weight:700;margin:3px 0 6px;line-height:1.3;height:32px;display:flex;align-items:center;justify-content:center;}
+  .stage-bar-bg{background:#EEF0F3;border-radius:20px;height:6px;overflow:hidden;}
+  .stage-bar-fill{background:var(--gold);height:100%;border-radius:20px;}
+  .stage-pct{font-size:10.5px;color:var(--muted);margin-top:4px;font-weight:700;}
+  .stage-tip-btn{margin-top:6px;font-size:10px;color:var(--navy);background:none;border:none;text-decoration:underline;cursor:pointer;padding:0;}
+
+  /* 특별관리 */
+  .special-card{border:1.5px solid var(--gold);background:#FFFBF2;border-radius:12px;padding:14px 16px;margin-bottom:14px;}
+  .special-card h2{color:var(--gold);margin:0 0 4px;font-size:13.5px;}
+  .special-note{font-size:12px;color:var(--muted);margin-bottom:10px;}
+
+  /* 할일 카드 */
+  .todo-group{margin-bottom:10px;}
+  .todo-group-title{font-size:12.5px;font-weight:800;color:var(--navy);margin:14px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--navy);}
+  .todo-item{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;background:#fff;}
+  .todo-item:hover{border-color:var(--gold);}
+  .todo-item.flagged{border-color:var(--gold);background:#FFFBF2;}
+  .todo-main{font-size:13px;}
+  .todo-branch{font-weight:800;color:var(--navy);}
+  .todo-doc{color:var(--text);}
+  .todo-next{font-size:11px;color:var(--muted);margin-top:2px;}
+  .todo-filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+  .chip{border:1px solid var(--border);background:#fff;padding:6px 14px;border-radius:999px;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;}
+  .chip.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .badge{font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;color:#fff;white-space:nowrap;}
+  .badge.대기{background:var(--hold);} .badge.진행중{background:var(--wait);}
+  .badge.완료{background:var(--ok);} .badge.미완료{background:var(--danger);}
+  .empty{text-align:center;color:var(--muted);font-size:13px;padding:20px 0;}
+
+  /* 매트릭스 */
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+  select,input[type=text],input[type=date],textarea{padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:#fff;}
+  .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;}
+  table.matrix{border-collapse:collapse;width:100%;font-size:12px;min-width:760px;}
+  table.matrix th{background:var(--navy);color:#fff;padding:8px 6px;white-space:nowrap;position:sticky;top:0;}
+  table.matrix td{padding:6px;border-bottom:1px solid var(--border);text-align:center;white-space:nowrap;}
+  table.matrix tr:nth-child(even){background:#FAFBFC;}
+  .cellbtn{display:inline-block;min-width:52px;padding:4px 6px;border-radius:6px;font-size:11px;font-weight:700;color:#fff;cursor:pointer;border:none;}
+  .cellbtn.대기{background:#C9CDD6;color:#4A5060;} .cellbtn.진행중{background:var(--wait);}
+  .cellbtn.완료{background:var(--ok);} .cellbtn.미완료{background:var(--danger);}
+  .cellbtn.na{background:transparent;color:var(--muted);cursor:default;}
+  .rowlabel{text-align:left !important;font-weight:700;}
+
+  button.primary{background:var(--gold);color:#fff;border:none;padding:11px 18px;border-radius:8px;font-weight:800;font-size:14px;cursor:pointer;}
+  button.secondary{background:#fff;color:var(--navy);border:1px solid var(--border);padding:8px 14px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;}
+  label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:10px 0 4px;}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(20,25,35,.5);display:none;align-items:center;justify-content:center;z-index:50;padding:16px;}
+  .modal-bg.show{display:flex;}
+  .modal{background:#fff;border-radius:14px;padding:20px;max-width:440px;width:100%;max-height:88vh;overflow-y:auto;}
+  .modal h3{margin:0 0 4px;font-size:15px;color:var(--navy);}
+  .modal .meta{font-size:12px;color:var(--muted);margin-bottom:10px;}
+  .tip-box{background:#EEF3FB;border-radius:8px;padding:10px 12px;font-size:12px;color:#345;margin:10px 0;line-height:1.5;}
+  .step-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--border);}
+  .step-row:last-child{border-bottom:none;}
+  .step-name{font-size:13px;font-weight:700;}
+  .modal-actions{display:flex;gap:8px;margin-top:16px;}
+  .modal-actions button{flex:1;}
+  .file-row{margin-top:6px;display:flex;align-items:center;gap:8px;}
+  .file-row img{height:44px;border-radius:6px;border:1px solid var(--border);cursor:pointer;}
+  .photo-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:60;}
+  .photo-modal-bg.show{display:flex;}
+  .photo-modal-bg img{max-width:92%;max-height:92%;border-radius:8px;}
+
+  @media (max-width:520px){
+    .stage-pill{min-width:96px;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>차량·기사 서류정비 진행관리</h1>
+    <div class="sub">계약 · 어린이통학버스신고필증 준비 과정 · <a href="https://varon2026.github.io/varon-links/" style="color:#B9C4DC;text-decoration:none;">← 바론링크로 돌아가기</a></div>
+  </div>
+  <div class="cloud-status"><span id="cloud-dot"></span><span id="cloud-text">연결 중</span></div>
+</header>
+
+<main>
+
+  <!-- 안전교육확인증 만료 알림 -->
+  <div class="alert-banner" id="expiryBanner" style="display:none">
+    <h2>⚠️ 안전교육확인증 만료 임박/경과</h2>
+    <div id="expiryList"></div>
+  </div>
+
+  <!-- 범죄경력조회 특별관리 -->
+  <div class="special-card" id="specialCard" style="display:none">
+    <h2>⭐ 범죄경력조회 특별관리</h2>
+    <div class="special-note">계약 갱신 전 재조회가 원칙이며, 유효기간은 없지만 누락 시 리스크가 큰 서류라 별도로 항상 표시돼요.</div>
+    <div id="specialList"></div>
+  </div>
+
+  <!-- 전체 프로세스 지도 -->
+  <div class="card">
+    <h2>전체 프로세스</h2>
+    <div class="stage-map" id="stageMap"></div>
+  </div>
+
+  <!-- 지금 할 일 -->
+  <div class="card">
+    <h2>지금 할 일</h2>
+    <div class="todo-filter-row" id="todoBranchFilter"></div>
+    <div id="todoList"><div class="empty">불러오는 중...</div></div>
+  </div>
+
+  <!-- 분원별 체크리스트 매트릭스 -->
+  <div class="card">
+    <h2>분원별 전체 현황</h2>
+    <div class="filters">
+      <select id="mCategory" onchange="renderMatrix()"><option value="">전체 대상</option></select>
+    </div>
+    <div class="table-wrap">
+      <table class="matrix">
+        <thead><tr id="matrixHead"></tr></thead>
+        <tbody id="matrixBody"><tr><td>불러오는 중...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- 편집 모달 -->
+<div class="modal-bg" id="editModalBg">
+  <div class="modal">
+    <h3 id="editTitle"></h3>
+    <div class="meta" id="editMeta"></div>
+    <div class="tip-box" id="editTip"></div>
+    <div id="editSteps"></div>
+
+    <div id="expiryBlock" style="display:none">
+      <label>발급일 (안전교육확인증)</label>
+      <input type="date" id="e_issueDate" style="width:100%">
+      <div style="font-size:11px;color:var(--muted);margin-top:4px" id="expiryPreview"></div>
+    </div>
+
+    <label>사진 첨부 (선택)</label>
+    <input type="file" id="e_photo" accept="image/*">
+    <div class="file-row" id="photoPreview"></div>
+
+    <label>메모</label>
+    <textarea id="e_memo" style="width:100%;min-height:50px"></textarea>
+
+    <div class="modal-actions">
+      <button class="secondary" onclick="closeEditModal()">닫기</button>
+      <button class="primary" onclick="saveRecord()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 단계 팁 모달 -->
+<div class="modal-bg" id="stageTipModalBg">
+  <div class="modal">
+    <h3 id="stageTipTitle"></h3>
+    <div class="tip-box" id="stageTipBody"></div>
+    <div class="modal-actions"><button class="primary" style="margin-top:0" onclick="document.getElementById('stageTipModalBg').classList.remove('show')">확인</button></div>
+  </div>
+</div>
+
+<!-- 사진 크게보기 -->
+<div class="photo-modal-bg" id="photoModalBg" onclick="this.classList.remove('show')">
+  <img id="photoModalImg" src="">
+</div>
+
+<script>
+/* ===================== 설정 ===================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyACokruLFwbkCpxriOdQgVZAQfryYBmUxM",
+  authDomain: "baron-shuttle-ops.firebaseapp.com",
+  projectId: "baron-shuttle-ops",
+  storageBucket: "baron-shuttle-ops.firebasestorage.app",
+  messagingSenderId: "278466071248",
+  appId: "1:278466071248:web:e22df780d05e6b46772cd5"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const COLLECTION = 'vehicle_docs';
+
+const BRANCHES = ['장안','서수원','수원','운정1','운정2','남동탄'];
+
+const DOC_DEFS = {
+  '차량': [
+    {name:'차량등록증', steps:['요청','수령','보관']},
+    {name:'보험증권', steps:['요청','수령','보관']},
+    {name:'차량 사진', steps:['요청','수령','보관']},
+    {name:'신고필증', steps:['신고','보관']}
+  ],
+  '기사': [
+    {name:'계약서', steps:['계약','보관']},
+    {name:'사업자등록증', steps:['요청','수령','보관']},
+    {name:'안전교육확인증', steps:['요청','수령','보관'], expiring:true},
+    {name:'범죄경력조회', steps:['요청','수령','보관'], special:true}
+  ],
+  '안전도우미': [
+    {name:'계약서', steps:['계약','보관']},
+    {name:'안전교육확인증', steps:['요청','수령','보관'], expiring:true},
+    {name:'범죄경력조회', steps:['요청','수령','보관'], special:true}
+  ]
+};
+const CATEGORIES = Object.keys(DOC_DEFS);
+const STEP_ORDER = ['요청','수령','계약','신고','보관'];
+const STEP_TO_STAGE = {'요청':1, '계약':2, '수령':3, '신고':4, '보관':6};
+const STATUS_OPTIONS = ['대기','진행중','완료','미완료'];
+const EXPIRY_ALERT_DAYS = 90;
+
+const STAGES = [
+  {n:1, name:'서류 현황 조사·요청', tip:'차량·기사·안전도우미가 갖춰야 할 서류가 뭔지 먼저 확인하고, 없는 서류는 요청부터 시작해요. 여기서 빠진 항목이 있으면 뒤 단계 전부가 밀리니, 처음에 목록을 꼼꼼히 훑는 게 가장 중요해요.'},
+  {n:2, name:'계약 일정 조율·체결', tip:'기사·안전도우미 계약은 원장님이 일정을 조율하고 날인까지 진행해요. 계약이 늦어지면 신고필증 발급 전체가 밀리니 이 단계가 병목이 되지 않도록 미리 챙겨두는 게 좋아요.'},
+  {n:3, name:'신고서류 준비(사본)', tip:'앞서 받은 원본 서류들을 사본으로 정리해서 신고 접수용 패키지를 만드는 단계예요. 본사 쪽 서류(사업자등록증, 법인인감증명서 등)도 이때 같이 준비돼요.'},
+  {n:4, name:'경찰서 신고·신고필증 발급', tip:'기존 신고필증 반납 → 신고서 제출 → 보완사항 대응 → 신고필증 수령 순서예요. 서류가 하나라도 빠지면 보완 요청이 오고 시간이 늘어지니, 3단계에서 서류를 완벽히 갖춰가는 게 핵심이에요.'},
+  {n:5, name:'범죄경력조회', tip:'유효기간은 없지만 계약 갱신 시점마다 새로 조회하는 게 원칙이에요. 발급 자체는 간단해도 놓치기 쉬워서 별도로 항상 강조해서 보여드리는 항목이에요.'},
+  {n:6, name:'최종 정리·보관', tip:'모든 서류를 분원/총무가 나눠 보관하고 구글시트 업데이트까지 마치면 이번 사이클이 끝나요. 다음 계약 갱신 시점에 다시 이 흐름을 반복하게 돼요.'}
+];
+
+const DOC_TIPS = {
+  '차량등록증':'변동이 없으면 영구적으로 유효한 서류예요. 차량이 바뀔 때만 다시 챙기면 돼요.',
+  '보험증권':'보험 갱신 주기에 맞춰 최신본으로 교체가 필요해요.',
+  '차량 사진':'전·후·좌·우 4방향 사진이 필요해요. 신고필증 신청 서류로 함께 쓰여요.',
+  '신고필증':'차량이나 계약 내용이 바뀌면 정보가 달라지므로 새로 발급받아야 해요. 발급 난도가 높은 서류라 3단계 준비를 얼마나 꼼꼼히 했는지가 속도를 좌우해요.',
+  '계약서':'1년 단위 계약이 원칙이에요. 원장님이 일정을 조율하고 날인까지 진행해요.',
+  '사업자등록증':'변동이 없으면 영구적으로 유효해요.',
+  '안전교육확인증':'유효기간 2년! 만료 90일 전부터 이 화면 상단에 자동으로 표시돼요.',
+  '범죄경력조회':'유효기간은 없지만, 계약을 갱신할 때마다 새로 조회하는 게 원칙이에요. 채용 전 시점의 조회서가 있어야 한다는 점도 중요해요.'
+};
+
+let allRecords = {}; // id -> record
+
+function recordId(branch, category, docName){ return `${branch}__${category}__${docName}`; }
+
+function defaultRecord(branch, category, docDef){
+  const steps = {};
+  docDef.steps.forEach(s => steps[s] = '대기');
+  return { branch, category, docName: docDef.name, steps, issueDate:null, photo:null, memo:'' };
+}
+
+function allCombos(){
+  const combos = [];
+  BRANCHES.forEach(b => CATEGORIES.forEach(c => DOC_DEFS[c].forEach(d => combos.push({branch:b, category:c, docDef:d}))));
+  return combos;
+}
+
+/* ===================== 로드/저장 ===================== */
+function setCloud(state,text){
+  document.getElementById('cloud-dot').className = state;
+  document.getElementById('cloud-text').textContent = text;
+}
+
+async function loadAll(){
+  try{
+    setCloud('loading','불러오는 중');
+    const snap = await db.collection(COLLECTION).get();
+    const fetched = {};
+    snap.forEach(doc => { fetched[doc.id] = doc.data(); });
+    allCombos().forEach(({branch,category,docDef}) => {
+      const id = recordId(branch,category,docDef.name);
+      allRecords[id] = fetched[id] || defaultRecord(branch,category,docDef);
+    });
+    setCloud('ok','연결됨');
+    renderAll();
+  }catch(err){
+    console.error(err);
+    setCloud('err','연결 실패');
+  }
+}
+
+async function saveRecordToCloud(id){
+  try{
+    setCloud('loading','저장 중');
+    await db.collection(COLLECTION).doc(id).set({...allRecords[id], updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
+    setCloud('ok','저장됨');
+  }catch(err){
+    console.error(err);
+    setCloud('err','저장 실패');
+  }
+}
+
+/* ===================== 계산 로직 ===================== */
+function docDefFor(category, docName){
+  return DOC_DEFS[category].find(d => d.name === docName);
+}
+
+function nextPendingStep(record){
+  const def = docDefFor(record.category, record.docName);
+  for(const step of STEP_ORDER){
+    if(!def.steps.includes(step)) continue;
+    if(record.steps[step] !== '완료') return step;
+  }
+  return null; // 모두 완료
+}
+
+function isFullyDone(record){
+  const def = docDefFor(record.category, record.docName);
+  return def.steps.every(s => record.steps[s] === '완료');
+}
+
+function stageProgress(stageNum){
+  let total = 0, done = 0;
+  Object.values(allRecords).forEach(r => {
+    const def = docDefFor(r.category, r.docName);
+    def.steps.forEach(step => {
+      if(STEP_TO_STAGE[step] === stageNum){
+        total++;
+        if(r.steps[step] === '완료') done++;
+      }
+    });
+  });
+  return total ? Math.round(done/total*100) : 0;
+}
+
+function daysUntil(dateStr){
+  const d1 = new Date(dateStr), d2 = new Date();
+  return Math.ceil((d1-d2)/(1000*60*60*24));
+}
+
+/* ===================== 렌더링 ===================== */
+function renderAll(){
+  renderExpiryBanner();
+  renderSpecialCard();
+  renderStageMap();
+  renderTodoList();
+  fillMatrixCategorySelect();
+  renderMatrix();
+}
+
+function renderExpiryBanner(){
+  const items = [];
+  Object.values(allRecords).forEach(r => {
+    const def = docDefFor(r.category, r.docName);
+    if(!def.expiring || !r.issueDate) return;
+    const expiry = new Date(r.issueDate); expiry.setFullYear(expiry.getFullYear()+2);
+    const days = daysUntil(expiry.toISOString().slice(0,10));
+    if(days <= EXPIRY_ALERT_DAYS) items.push({r, days});
+  });
+  const box = document.getElementById('expiryBanner');
+  const list = document.getElementById('expiryList');
+  if(!items.length){ box.style.display='none'; return; }
+  box.style.display='block';
+  items.sort((a,b)=>a.days-b.days);
+  list.innerHTML = items.map(({r,days})=>`
+    <div class="alert-row" onclick="openEditModal('${recordId(r.branch,r.category,r.docName)}')" style="cursor:pointer">
+      <span>${r.branch} · ${r.category} 안전교육확인증</span>
+      <span class="alert-days">${days<0? `${-days}일 경과` : `D-${days}`}</span>
+    </div>`).join('');
+}
+
+function renderSpecialCard(){
+  const items = Object.values(allRecords).filter(r => docDefFor(r.category,r.docName).special && !isFullyDone(r));
+  const box = document.getElementById('specialCard');
+  const list = document.getElementById('specialList');
+  if(!items.length){ box.style.display='none'; return; }
+  box.style.display='block';
+  list.innerHTML = items.map(r => {
+    const next = nextPendingStep(r);
+    return `<div class="alert-row" onclick="openEditModal('${recordId(r.branch,r.category,r.docName)}')" style="cursor:pointer;border-top-color:#F0E0BE">
+      <span>${r.branch} · ${r.category} 범죄경력조회</span>
+      <span class="badge ${r.steps[next]}">${next} ${r.steps[next]}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderStageMap(){
+  const wrap = document.getElementById('stageMap');
+  let currentAssigned = false;
+  wrap.innerHTML = STAGES.map(s => {
+    const pct = stageProgress(s.n);
+    const isCurrent = !currentAssigned && pct < 100 && s.n !== 5;
+    if(isCurrent) currentAssigned = true;
+    return `<div class="stage-pill ${isCurrent?'current':''}">
+      <div class="num">${s.n}단계</div>
+      <div class="name">${s.name}</div>
+      <div class="stage-bar-bg"><div class="stage-bar-fill" style="width:${pct}%"></div></div>
+      <div class="stage-pct">${pct}%</div>
+      <button class="stage-tip-btn" onclick="showStageTip(${s.n})">이 단계는?</button>
+    </div>`;
+  }).join('');
+}
+
+function showStageTip(n){
+  const s = STAGES.find(x=>x.n===n);
+  document.getElementById('stageTipTitle').textContent = `${s.n}단계 · ${s.name}`;
+  document.getElementById('stageTipBody').textContent = s.tip;
+  document.getElementById('stageTipModalBg').classList.add('show');
+}
+
+let todoBranchFilter = '전체';
+function renderTodoBranchChips(){
+  const wrap = document.getElementById('todoBranchFilter');
+  wrap.innerHTML = ['전체', ...BRANCHES].map(b => `<button type="button" class="chip ${b===todoBranchFilter?'active':''}" data-branch="${b}">${b}</button>`).join('');
+  wrap.querySelectorAll('.chip').forEach(btn => {
+    btn.addEventListener('click', () => { todoBranchFilter = btn.dataset.branch; renderTodoList(); });
+  });
+}
+
+function renderTodoList(){
+  renderTodoBranchChips();
+  let pending = Object.values(allRecords).filter(r => !isFullyDone(r));
+  if(todoBranchFilter !== '전체') pending = pending.filter(r => r.branch === todoBranchFilter);
+  const box = document.getElementById('todoList');
+  if(!pending.length){ box.innerHTML = '<div class="empty">모든 서류가 완료됐어요 🎉</div>'; return; }
+
+  const groups = {};
+  pending.forEach(r => {
+    const next = nextPendingStep(r);
+    const stage = STEP_TO_STAGE[next];
+    (groups[stage] = groups[stage] || []).push({r, next});
+  });
+
+  let html = '';
+  STAGES.filter(s=>s.n!==5).forEach(s => {
+    const items = groups[s.n];
+    if(!items || !items.length) return;
+    html += `<div class="todo-group"><div class="todo-group-title">${s.n}단계 · ${s.name} (${items.length})</div>`;
+    html += items.map(({r,next}) => {
+      const def = docDefFor(r.category, r.docName);
+      const flagged = def.special || def.expiring;
+      return `<div class="todo-item ${flagged?'flagged':''}" onclick="openEditModal('${recordId(r.branch,r.category,r.docName)}')">
+        <div class="todo-main">
+          <span class="todo-branch">${r.branch}</span> · <span class="todo-doc">${r.category} ${r.docName}</span>
+          <div class="todo-next">다음 할 일: ${next}</div>
+        </div>
+        <span class="badge ${r.steps[next]}">${r.steps[next]}</span>
+      </div>`;
+    }).join('');
+    html += '</div>';
+  });
+  box.innerHTML = html || '<div class="empty">모든 서류가 완료됐어요 🎉</div>';
+}
+
+function fillMatrixCategorySelect(){
+  const sel = document.getElementById('mCategory');
+  if(sel.options.length) return;
+  sel.innerHTML = '<option value="">전체 대상</option>' + CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join('');
+}
+
+function renderMatrix(){
+  const catFilter = document.getElementById('mCategory').value;
+  const head = document.getElementById('matrixHead');
+  head.innerHTML = `<th class="rowlabel">대상 · 서류</th>` + BRANCHES.map(b=>`<th>${b}</th>`).join('');
+
+  const body = document.getElementById('matrixBody');
+  let rows = [];
+  CATEGORIES.forEach(cat => {
+    if(catFilter && catFilter !== cat) return;
+    DOC_DEFS[cat].forEach(docDef => {
+      rows.push({cat, docDef});
+    });
+  });
+
+  body.innerHTML = rows.map(({cat,docDef}) => {
+    const cells = BRANCHES.map(b => {
+      const r = allRecords[recordId(b,cat,docDef.name)];
+      const done = isFullyDone(r);
+      const next = nextPendingStep(r);
+      const label = done ? '완료' : (next || '-');
+      const status = done ? '완료' : r.steps[next];
+      return `<td><button class="cellbtn ${status}" onclick="openEditModal('${recordId(b,cat,docDef.name)}')">${label}</button></td>`;
+    }).join('');
+    return `<tr><td class="rowlabel">${cat} · ${docDef.name}</td>${cells}</tr>`;
+  }).join('');
+}
+
+/* ===================== 편집 모달 ===================== */
+let editingId = null;
+function openEditModal(id){
+  editingId = id;
+  const r = allRecords[id];
+  const def = docDefFor(r.category, r.docName);
+  document.getElementById('editTitle').textContent = `${r.category} · ${r.docName}`;
+  document.getElementById('editMeta').textContent = `${r.branch} 분원`;
+  document.getElementById('editTip').textContent = DOC_TIPS[r.docName] || '';
+
+  document.getElementById('editSteps').innerHTML = def.steps.map(step => `
+    <div class="step-row">
+      <span class="step-name">${step}</span>
+      <select onchange="setStepStatus('${step}', this.value)">
+        ${STATUS_OPTIONS.map(o=>`<option value="${o}" ${r.steps[step]===o?'selected':''}>${o}</option>`).join('')}
+      </select>
+    </div>`).join('');
+
+  const expiryBlock = document.getElementById('expiryBlock');
+  if(def.expiring){
+    expiryBlock.style.display = 'block';
+    document.getElementById('e_issueDate').value = r.issueDate || '';
+    updateExpiryPreview();
+  } else {
+    expiryBlock.style.display = 'none';
+  }
+
+  document.getElementById('e_memo').value = r.memo || '';
+  const preview = document.getElementById('photoPreview');
+  preview.innerHTML = r.photo ? `<img src="${r.photo}" onclick="showPhoto('${r.photo}')">` : '';
+  document.getElementById('e_photo').value = '';
+
+  document.getElementById('editModalBg').classList.add('show');
+}
+
+function setStepStatus(step, value){
+  allRecords[editingId].steps[step] = value;
+}
+
+function updateExpiryPreview(){
+  const val = document.getElementById('e_issueDate').value;
+  const el = document.getElementById('expiryPreview');
+  if(!val){ el.textContent=''; return; }
+  const expiry = new Date(val); expiry.setFullYear(expiry.getFullYear()+2);
+  el.textContent = `만료 예정일: ${expiry.toISOString().slice(0,10)}`;
+}
+document.addEventListener('input', e => { if(e.target && e.target.id==='e_issueDate') updateExpiryPreview(); });
+
+function compressImage(file, maxDim=800, quality=0.55){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = ()=>{ img.onerror = reject; img.onload = ()=>{
+      let {width, height} = img;
+      if(width > height && width > maxDim){ height = Math.round(height*maxDim/width); width = maxDim; }
+      else if(height > maxDim){ width = Math.round(width*maxDim/height); height = maxDim; }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    }; img.src = reader.result; };
+    reader.readAsDataURL(file);
+  });
+}
+
+function showPhoto(src){
+  document.getElementById('photoModalImg').src = src;
+  document.getElementById('photoModalBg').classList.add('show');
+}
+
+function closeEditModal(){
+  document.getElementById('editModalBg').classList.remove('show');
+  editingId = null;
+}
+
+async function saveRecord(){
+  const r = allRecords[editingId];
+  const def = docDefFor(r.category, r.docName);
+  if(def.expiring) r.issueDate = document.getElementById('e_issueDate').value || null;
+  r.memo = document.getElementById('e_memo').value;
+
+  const file = document.getElementById('e_photo').files[0];
+  if(file){
+    let photo = await compressImage(file);
+    if(photo.length > 700000) photo = await compressImage(file, 600, 0.4);
+    r.photo = photo;
+  }
+
+  await saveRecordToCloud(editingId);
+  closeEditModal();
+  renderAll();
+}
+
+/* ===================== 초기화 ===================== */
+loadAll();
+</script>
+</body>
+</html>

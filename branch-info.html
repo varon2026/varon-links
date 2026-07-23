@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>바론 분원정보·계정관리</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.3/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+  :root{
+    --navy:#1E3A66; --navy-dark:#132844; --gold:#A9790E;
+    --bg:#F5F6F8; --card:#FFFFFF; --border:#E2E5EA; --text:#242832; --muted:#7A8090;
+    --danger:#C0392B; --ok:#2F9E44;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif;}
+
+  #gate{position:fixed;inset:0;background:var(--navy-dark);display:flex;align-items:center;justify-content:center;z-index:9999;}
+  #gate .box{background:#fff;border-radius:16px;padding:36px 32px;width:320px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3);}
+  #gate .icon{width:52px;height:52px;border-radius:14px;background:var(--navy);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;}
+  #gate h2{margin:0 0 6px;font-size:17px;color:var(--navy);}
+  #gate p{margin:0 0 18px;font-size:12px;color:var(--muted);}
+  #gate input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:10px;font-size:15px;text-align:center;letter-spacing:2px;margin-bottom:12px;}
+  #gate button{width:100%;padding:11px;border:none;border-radius:10px;background:var(--navy);color:#fff;font-weight:700;font-size:14px;cursor:pointer;}
+  #gate .err{color:var(--danger);font-size:12px;margin-top:8px;min-height:16px;}
+
+  #appRoot{display:none;}
+
+  header{background:var(--navy);color:#fff;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;}
+  header h1{margin:0;font-size:19px;}
+  header .sub{margin:2px 0 0;font-size:12px;color:#B9C4DC;}
+  header .sub a{color:#B9C4DC;}
+  .lock-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;}
+
+  nav.tabs{display:flex;background:var(--navy-dark);overflow-x:auto;}
+  nav.tabs button{flex:1;min-width:130px;background:transparent;border:none;color:#B9C4DC;padding:14px 8px;font-size:12.5px;font-weight:700;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;}
+  nav.tabs button.active{color:#fff;border-bottom-color:var(--gold);background:rgba(255,255,255,.05);}
+
+  main{max-width:1200px;margin:0 auto;padding:20px;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;}
+  .card h2{font-size:14px;margin:0 0 12px;font-weight:800;color:var(--navy);}
+
+  .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+  .filters input, .filters select{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;}
+  .filters input[type=text]{flex:1;min-width:180px;}
+
+  button.primary{background:var(--navy);color:#fff;border:none;padding:9px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;}
+  button.secondary{background:#fff;color:var(--navy);border:1px solid var(--border);padding:9px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;}
+  button.ghost-add{background:#EDF2FA;color:var(--navy);border:1px dashed var(--navy);padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:12px;}
+  button.danger{background:#fff;color:var(--danger);border:1px solid #F3C9C4;padding:6px 10px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;}
+  button.edit-btn{background:#fff;color:var(--gold);border:1px solid #E9D6B0;padding:6px 10px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;}
+  button.small{padding:6px 10px;font-size:12px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  table th{background:var(--navy);color:#fff;text-align:left;padding:9px 10px;white-space:nowrap;}
+  table td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top;}
+  table tr:nth-child(even) td{background:#FAFBFC;}
+  .tag{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:800;}
+  .tag.branch{background:#E7F0FF;color:var(--navy);}
+  .tag.hq{background:#FDF0DA;color:var(--gold);}
+  .tag.franchise{background:#E8F5E9;color:#2F7D3C;}
+  .tag.etc{background:#F1F2F4;color:var(--muted);}
+  .pw{font-family:'Courier New',monospace;background:#F3F4F6;padding:2px 6px;border-radius:5px;}
+  .actions-cell{white-space:nowrap;}
+  .actions-inner{display:flex;gap:6px;}
+
+  .form-box{border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;background:#FAFBFC;display:none;}
+  .form-box.open{display:block;}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:12px;}
+  .form-grid label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:var(--muted);}
+  .form-grid input, .form-grid select{padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;}
+
+  .roster-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;padding:3px 8px;border-radius:20px;}
+  .roster-badge.관리자{background:#FDECEC;color:var(--danger);}
+  .roster-badge.일반{background:#E7F0FF;color:var(--navy);}
+  .roster-badge.기타{background:#F1F2F4;color:var(--muted);}
+
+  .search-result-item{border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;}
+  .empty{text-align:center;padding:40px 20px;color:var(--muted);}
+  footer{text-align:center;font-size:11px;color:var(--muted);padding:20px;}
+  .note{font-size:11px;color:var(--muted);margin-top:6px;}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="box">
+    <div class="icon">🔒</div>
+    <h2>분원정보·계정관리</h2>
+    <p>비밀번호/계정정보가 포함된 페이지입니다.<br>총무팀 담당자만 접근 가능합니다.</p>
+    <input type="password" id="gatePw" placeholder="비밀번호" autocomplete="new-password" name="bi_gate_pw_field" onkeydown="if(event.key==='Enter')checkGate()">
+    <button onclick="checkGate()">입장</button>
+    <div class="err" id="gateErr"></div>
+  </div>
+</div>
+
+<div id="appRoot">
+
+<header>
+  <div>
+    <h1>바론 분원정보·계정관리</h1>
+    <div class="sub">분원정보 · 학교안전지원 · 주차등록 · 기타정보 · 범죄경력시설 · 출입보안현황 · <a href="https://varon2026.github.io/varon-links/">← 바론링크로 돌아가기</a></div>
+  </div>
+  <button class="lock-btn" onclick="lockApp()">🔒 잠그기</button>
+</header>
+
+<nav class="tabs">
+  <button class="active" onclick="switchTab('branches')">분원 기본정보</button>
+  <button onclick="switchTab('school')">학교안전지원시스템</button>
+  <button onclick="switchTab('parking')">주차등록</button>
+  <button onclick="switchTab('crime')">범죄경력 시설정보</button>
+  <button onclick="switchTab('fingerprint')">출입보안현황</button>
+  <button onclick="switchTab('etc')">기타 정보</button>
+</nav>
+
+<main>
+
+  <!-- ===================== 1. 분원 기본정보 ===================== -->
+  <section class="view active" id="view-branches">
+    <div class="card">
+      <button class="ghost-add" onclick="toggleForm('brForm')">➕ 새로 등록</button>
+      <div class="form-box" id="brForm">
+        <div class="form-grid">
+          <label>구분 <select id="brFormType"><option value="분원">분원</option><option value="본사">본사</option><option value="가맹본사">가맹본사</option><option value="기타">기타</option></select></label>
+          <label>이름 <input type="text" id="brFormName" placeholder="예: 장안"></label>
+          <label>주소 <input type="text" id="brFormAddr"></label>
+          <label>전화번호 <input type="text" id="brFormPhone"></label>
+          <label>사업자/법인등록번호 <input type="text" id="brFormBiz"></label>
+          <label>학원설립운영등록증번호 <input type="text" id="brFormLicense"></label>
+          <label>비고 <input type="text" id="brFormNote"></label>
+        </div>
+        <button class="primary" onclick="submitBranch()" id="brSubmitBtn">등록</button>
+        <button class="secondary" onclick="toggleForm('brForm')">취소</button>
+      </div>
+
+      <div class="filters">
+        <button class="secondary small" id="brFilterAll" onclick="setBranchFilter('전체')">전체</button>
+        <button class="secondary small" id="brFilterBranch" onclick="setBranchFilter('분원')">분원만</button>
+        <button class="secondary small" id="brFilterHq" onclick="setBranchFilter('본사')">본사만</button>
+        <button class="secondary small" id="brFilterFranchise" onclick="setBranchFilter('가맹본사')">가맹본사만</button>
+        <button class="secondary small" id="brFilterEtc" onclick="setBranchFilter('기타')">기타만</button>
+        <input type="text" id="brSearch" placeholder="이름/주소 검색" oninput="renderBranches()">
+        <button class="secondary small" onclick="exportBranches()">⬇ 엑셀로 내보내기</button>
+      </div>
+      <div id="branchesTableWrap"></div>
+    </div>
+  </section>
+
+  <!-- ===================== 2. 학교안전지원시스템 ===================== -->
+  <section class="view" id="view-school">
+    <div class="card">
+      <button class="ghost-add" onclick="toggleForm('schForm')">➕ 새로 등록</button>
+      <div class="form-box" id="schForm">
+        <div class="form-grid">
+          <label>분원 <select id="schFormBranch"></select></label>
+          <label>캠퍼스명(신고명/내부호칭) <input type="text" id="schFormSite" placeholder="예: 수원장안분원정상어학원(장안캠퍼스)"></label>
+          <label>ID <input type="text" id="schFormId"></label>
+          <label>비밀번호 <input type="text" id="schFormPw"></label>
+          <label>비고 <input type="text" id="schFormNote" placeholder="기관장명 등"></label>
+        </div>
+        <button class="primary" onclick="submitSimpleAccount('school')" id="schSubmitBtn">등록</button>
+        <button class="secondary" onclick="toggleForm('schForm')">취소</button>
+      </div>
+      <div class="filters">
+        <button class="secondary small" onclick="exportAccountList('school','학교안전지원시스템')">⬇ 엑셀로 내보내기</button>
+      </div>
+      <div id="schoolTableWrap"></div>
+    </div>
+  </section>
+
+  <!-- ===================== 3. 주차등록 ===================== -->
+  <section class="view" id="view-parking">
+    <div class="card">
+      <button class="ghost-add" onclick="toggleForm('pkForm')">➕ 새로 등록</button>
+      <div class="form-box" id="pkForm">
+        <div class="form-grid">
+          <label>분원 <select id="pkFormBranch"></select></label>
+          <label>사이트/건물명 <input type="text" id="pkFormSite" placeholder="예: members.iparking.co.kr (정연메이져빌딩)"></label>
+          <label>ID <input type="text" id="pkFormId"></label>
+          <label>비밀번호 <input type="text" id="pkFormPw"></label>
+          <label>비고 <input type="text" id="pkFormNote"></label>
+        </div>
+        <button class="primary" onclick="submitSimpleAccount('parking')" id="pkSubmitBtn">등록</button>
+        <button class="secondary" onclick="toggleForm('pkForm')">취소</button>
+      </div>
+      <div class="filters">
+        <button class="secondary small" onclick="exportAccountList('parking','주차등록')">⬇ 엑셀로 내보내기</button>
+      </div>
+      <div id="parkingTableWrap"></div>
+    </div>
+  </section>
+
+  <!-- ===================== 4. 기타 계정 ===================== -->
+  <section class="view" id="view-etc">
+    <div class="card">
+      <h2>기타 정보 메모</h2>
+      <div class="note" style="margin-bottom:10px;">와이파이, 출입문 비밀번호, 기타 사이트 로그인 등 분원 구분 없이 이름/아이디/비밀번호로만 간단히 기록합니다.</div>
+      <button class="ghost-add" onclick="toggleForm('etcForm')">➕ 새로 등록</button>
+      <div class="form-box" id="etcForm">
+        <div class="form-grid">
+          <label>이름(무엇인지) <input type="text" id="etcFormName" placeholder="예: 장안 출입문 비밀번호"></label>
+          <label>아이디 <input type="text" id="etcFormId" placeholder="없으면 비워두세요"></label>
+          <label>비밀번호 <input type="text" id="etcFormPw"></label>
+          <label>비고 <input type="text" id="etcFormNote"></label>
+        </div>
+        <button class="primary" onclick="submitEtc()" id="etcSubmitBtn">등록</button>
+        <button class="secondary" onclick="toggleForm('etcForm')">취소</button>
+      </div>
+      <div class="filters">
+        <input type="text" id="etcSearch" placeholder="이름 검색" oninput="renderEtc()">
+        <button class="secondary small" onclick="exportEtc()">⬇ 엑셀로 내보내기</button>
+      </div>
+      <div id="etcTableWrap"></div>
+    </div>
+  </section>
+
+  <!-- ===================== 5. 범죄경력 시설정보 ===================== -->
+  <section class="view" id="view-crime">
+    <div class="card">
+      <button class="ghost-add" onclick="toggleForm('crForm')">➕ 새로 등록</button>
+      <div class="form-box" id="crForm">
+        <div class="form-grid">
+          <label>분원 <select id="crFormBranch"></select></label>
+          <label>시설 ID <input type="text" id="crFormFacilityId"></label>
+          <label>검증번호 <input type="text" id="crFormVerify"></label>
+          <label>관할경찰서 <input type="text" id="crFormPolice"></label>
+          <label>비고 <input type="text" id="crFormNote"></label>
+        </div>
+        <button class="primary" onclick="submitCrime()" id="crSubmitBtn">등록</button>
+        <button class="secondary" onclick="toggleForm('crForm')">취소</button>
+      </div>
+      <div class="filters">
+        <button class="secondary small" onclick="exportCrime()">⬇ 엑셀로 내보내기</button>
+      </div>
+      <div id="crimeTableWrap"></div>
+    </div>
+  </section>
+
+  <!-- ===================== 6. 출입보안(지문) 현황 ===================== -->
+  <section class="view" id="view-fingerprint">
+    <div class="card">
+      <h2>🔍 이름으로 전체 분원 검색</h2>
+      <div class="filters">
+        <input type="text" id="fpSearchName" placeholder="이름을 입력하면 전체 분원에서 찾아드립니다" oninput="renderFingerprintSearch()">
+      </div>
+      <div id="fpSearchResult"></div>
+    </div>
+
+    <div class="card">
+      <h2>분원별 출입보안 현황</h2>
+      <div class="filters">
+        <label style="font-size:12px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:6px;margin:0;">
+          분원 선택
+          <select id="fpViewBranch" onchange="renderFingerprintList()" style="min-width:120px;font-weight:700;color:var(--navy);"></select>
+        </label>
+        <button class="secondary small" onclick="exportFingerprint()">⬇ 이 분원 엑셀로 내보내기</button>
+        <button class="secondary small" onclick="exportFingerprintAll()">⬇ 전체 분원 한꺼번에 엑셀로 내보내기</button>
+      </div>
+      <button class="ghost-add" onclick="toggleForm('fpForm')">➕ 등록자 추가</button>
+      <div class="form-box" id="fpForm">
+        <div class="form-grid">
+          <label>분원 <select id="fpFormBranch"></select></label>
+          <label>구분 <select id="fpFormType"><option>관리자</option><option>일반</option><option>기타</option></select></label>
+          <label>번호 <input type="text" id="fpFormNo"></label>
+          <label>이름 <input type="text" id="fpFormName"></label>
+          <label>등록일 <input type="date" id="fpFormDate"></label>
+          <label>등록자 <input type="text" id="fpFormBy"></label>
+        </div>
+        <button class="primary" onclick="submitFingerprint()" id="fpSubmitBtn">등록</button>
+        <button class="secondary" onclick="toggleForm('fpForm')">취소</button>
+      </div>
+      <div style="height:14px;"></div>
+      <div id="fingerprintTableWrap"></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>바론네트웍스(주) 총무팀 · 분원정보·계정관리 v2.0 · 민감정보 포함 — 화면 공유 시 주의해주세요</footer>
+
+<script>
+const BRANCHES = ['장안','서수원','수원','수원이관','운정1','운정2','남동탄'];
+const AFFILIATES = ['바론네트웍스','제이엘에스네트웍스','정상제이엘에스'];
+const ALL_ENTITIES = [...BRANCHES, ...AFFILIATES];
+const GATE_PASSWORD = '2026';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyACokruLFwbkCpxriOdQgVZAQfryYBmUxM",
+  authDomain: "baron-shuttle-ops.firebaseapp.com",
+  projectId: "baron-shuttle-ops",
+  storageBucket: "baron-shuttle-ops.firebasestorage.app",
+  messagingSenderId: "278466071248",
+  appId: "1:278466071248:web:e22df780d05e6b46772cd5"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const COL = 'branch_info';
+
+const state = { branches: [], school: [], parking: [], etc: [], crime: [], fingerprint: {} };
+let branchFilterMode = '전체';
+let editing = { branches: null, school: null, parking: null, etc: null, crime: null, fingerprint: null };
+
+/* ---------------- 잠금 화면 ---------------- */
+function checkGate(){
+  const val = document.getElementById('gatePw').value;
+  if(val === GATE_PASSWORD){
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('appRoot').style.display = 'block';
+    sessionStorage.setItem('bi_unlocked', '1');
+    boot();
+  }else{
+    document.getElementById('gateErr').textContent = '비밀번호가 올바르지 않습니다.';
+  }
+}
+function lockApp(){
+  sessionStorage.removeItem('bi_unlocked');
+  location.reload();
+}
+window.addEventListener('DOMContentLoaded', () => {
+  if(sessionStorage.getItem('bi_unlocked') === '1'){
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('appRoot').style.display = 'block';
+    boot();
+  }
+});
+
+function toggleForm(id, forceOpen){
+  const el = document.getElementById(id);
+  if(forceOpen === true) el.classList.add('open');
+  else if(forceOpen === false) el.classList.remove('open');
+  else el.classList.toggle('open');
+}
+
+/* ---------------- 초기 시드 데이터 ---------------- */
+const SEED_BRANCHES = [
+  ['분원','장안','경기도 수원시 장안구 대평로 80, 10층(정자동, 정연메이저빌딩)','031-268-0503','872-81-02983 / 135811-0477539','4796-2','주식회사 제이엘에스에듀'],
+  ['분원','서수원','경기도 수원시 권선구 금곡로 102번길 56, 2층(금곡동, 스카이빌딩)','031-268-0588','896-87-03414 / 130111-1211456','6164-1','주식회사 제이엘에스솔루션'],
+  ['분원','수원','경기도 수원시 영통구 권선로 908번길 47, 5층(신동, 드림타워)','031-203-0555','189-28-00699','6699','제이엘에스 네트웍스 수원'],
+  ['분원','수원이관','경기도 수원시 영통구 권선로 908번길 50, 3층(신동, TGE빌딩)','031-546-8229','189-28-00699','7222','제이엘에스 네트웍스 수원'],
+  ['분원','운정1','경기도 파주시 교하로 83, 5층(목동동, 동광프라자)','031-949-7200','598-12-00683','1416','제이엘에스 네트웍스 운정'],
+  ['분원','운정2','경기도 파주시 경의로 1240번길 37-1, 8층(와동동, 명품프라자)','031-949-0506','651-28-01062','1690','제이엘에스네트웍스 운정2관'],
+  ['분원','남동탄','경기도 화성시 동탄순환대로 14길 77, 5층 501~512호(산척동, 트램프라자)','031-377-0503','142-13-02151','4609','제이엘에스 네트웍스 동탄'],
+  ['본사','바론네트웍스','경기도 용인시 기흥구 구성로 357, B동 7층 701호(청덕동, 용인테크노밸리)','031-299-2900','462-87-02852 / 134511-0635556','','주식회사 바론네트웍스'],
+  ['본사','제이엘에스네트웍스','경기도 용인시 기흥구 구성로 357, B동 7층 701호(청덕동, 용인테크노밸리)','031-299-2900','292-86-02504 / 134511-0579762','','주식회사 제이엘에스네트웍스'],
+  ['가맹본사','정상제이엘에스','서울특별시 강남구 영동대로 229(대치동)','02-3413-9109','130-81-42974 / 124311-0039762','','주식회사 정상제이엘에스'],
+];
+const SEED_SCHOOL = [
+  ['장안','수원장안분원정상어학원(장안캠퍼스)','8728102983001','jls0503@','기관장: 김효성'],
+  ['서수원','서수원정상어학원(서수원캠퍼스)','1308142974037','0567','기관장: 박정흠'],
+  ['수원','수원정상어학원(수원캠퍼스)','1308142974036','0567','기관장: 박정흠'],
+  ['수원이관','수원이관정상어학원(수원2관)','1308142974014','0567','기관장: 박정흠'],
+  ['운정1','파주운정정상어학원(1분원)','1308142974029','jls03194972','기관장: 박정흠'],
+  ['운정2','파주운정2관정상어학원(2분원)','1308142974033','jls031949050^','기관장: 박정흠'],
+  ['남동탄','남동탄정상어학원(남동탄캠퍼스)','namdongtanjls','jls3770503','기관장: 박정흠'],
+];
+const SEED_PARKING = [
+  ['장안','members.iparking.co.kr (정연메이져빌딩)','jymj1002','jymj1002',''],
+  ['서수원','121.136.129.66 (스카이빌딩)','jls0588','588',''],
+  ['운정1','112.161.31.42 (동광위너스프라자빌딩)','501','501',''],
+  ['운정2','r.turuparking.co.kr (운정명품프라자빌딩)','801','801',''],
+  ['수원','npdc.nicepark.co.kr (영통드림타워빌딩)','nc7e501','@jls203!',''],
+  ['남동탄','a15595.parkingweb.kr (동탄트램프라자빌딩)','501','3770503',''],
+];
+const SEED_ETC = [
+  ['서수원 지하주차장(스카이빌딩 지하출입문)','','0256#',''],
+  ['장안 출입문','','0721*',''],
+  ['바론 와이파이','','a0312992900',''],
+  ['교통안전교육센터(대표님 교육용)','varon1027','jls2023@',''],
+  ['G2Works','','Jls1234!',''],
+];
+const SEED_CRIME = [
+  ['장안','AB1QL9','0503','수원장안',''],
+  ['서수원','ACSB1A','6164','수원남부',''],
+  ['수원','ACSB1A','6699','수원남부',''],
+  ['수원이관','ACSB1A','7222','수원남부',''],
+  ['운정1','ACSB1A','1416','파주',''],
+  ['운정2','ACSB1A','1690','파주',''],
+  ['남동탄','ACSB1A','4609','화성동탄',''],
+];
+const SEED_FINGERPRINT = {
+  '장안': [
+    ['관리자','3','김은희','2026-06-19','김은희'],['관리자','4','황찬송','2026-06-19','김은희'],
+    ['관리자','5','송정림','2026-06-19','김은희'],['관리자','6','최우혁','2026-06-19','김은희'],
+    ['일반','7','송정림','2026-06-19','김은희'],['일반','8','김은희','2026-06-19','김은희'],
+    ['일반','9','황찬송','2026-06-19','김은희'],['일반','10','최우혁','2026-06-19','김은희'],
+    ['일반','13','지영희','',''],['일반','14','김근정','',''],['일반','15','장완','',''],['일반','16','조지혜','',''],
+    ['일반','17','김세광(ryan)','2026-06-19','김은희'],['일반','18','이은학(daniel)','2026-06-19','김은희'],
+    ['일반','19','이지영(jeanne)','2026-06-19','김은희'],['일반','20','정정예','2026-06-19','김은희'],
+    ['일반','22','최민경','2026-06-19','김은희'],['일반','23','김덕(anna)','2026-06-19','김은희'],
+    ['일반','24','김설희(catherine)','2026-06-19','김은희'],['일반','25','김윤송(amelia)','2026-06-19','김은희'],
+    ['일반','26','김동하','2026-06-19','김은희'],['일반','31','청소여사님','2026-06-19','김은희'],
+    ['일반','32','청소여사님','2026-06-19','김은희'],
+    ['기타','50','보조키1','',''],['기타','51','보조키2','',''],
+  ],
+  '운정1': [
+    ['관리자','1','강인경(kelly)','',''],['관리자','2','마스터카드','',''],['관리자','3','정희라(nelly)','',''],
+    ['일반','6','권다은(diana)','',''],['일반','7','키카드1','',''],['일반','8','정희라(nelly)','',''],
+    ['일반','9','나혜인(hazel)','',''],['일반','10','조수현(jojo)','',''],['일반','11','이한나(Aprill)','',''],
+    ['일반','12','강인경(Kelly)','',''],['일반','13','유지현(bella)','',''],['일반','14','장완','',''],
+    ['일반','15','키카드2','',''],['일반','16','김동환(david)','',''],
+  ],
+  '운정2': [
+    ['관리자','1','김은희','',''],['관리자','2','조서랑','',''],['관리자','3','강인경','',''],
+    ['일반','11','지영희','',''],['일반','12','김근정','',''],['일반','14','권다은','',''],
+    ['일반','15','강유경','',''],['일반','16','김주안','',''],['일반','17','황규태','',''],
+    ['일반','18','김시은','',''],['일반','19','김창남','',''],['일반','20','노진영','',''],
+    ['일반','21','이우만','',''],['일반','22','김동환','',''],['일반','23','박영숙','',''],
+    ['일반','24','이은주','',''],['일반','25','서화진','',''],['일반','26','김혜지','',''],
+    ['일반','27','안은주','',''],['일반','28','이지민','',''],['일반','29','박수진','',''],
+    ['일반','30','청수지인','',''],['일반','31','청수사장님','',''],
+    ['기타','50','보조키','',''],['기타','51','보조키','',''],
+  ],
+  '남동탄': [
+    ['관리자','1','관리자카드','',''],['관리자','12','카드키(청소용역)','',''],
+    ['일반','13','조현권','',''],['일반','14','한다슬','',''],['일반','15','이예지','',''],
+    ['일반','16','민성희','',''],['일반','17','조은빛','',''],['일반','19','심가희','',''],
+    ['일반','20','최지영','',''],['일반','21','지영희','',''],['일반','23','최윤정','',''],
+    ['일반','28','화장실청소여사님','',''],['일반','32','양희수','',''],['일반','34','김유정','',''],
+    ['일반','36','이정희','',''],['일반','41','김원빈','',''],['일반','46','장완','',''],
+  ],
+  '수원': [
+    ['일반','4','최우혁','',''],['일반','5','정연주','',''],['일반','6','박미선','',''],
+    ['기타','','카드키','',''],
+  ],
+  '서수원': [],
+  '수원이관': [],
+};
+
+
+async function boot(){
+  fillSelect('schFormBranch', ALL_ENTITIES);
+  fillSelect('pkFormBranch', ALL_ENTITIES);
+  fillSelect('crFormBranch', ALL_ENTITIES);
+  fillSelect('fpFormBranch', BRANCHES);
+  fillSelect('fpViewBranch', BRANCHES);
+  document.getElementById('fpFormDate').valueAsDate = new Date();
+
+  await loadAll();
+  renderBranches(); renderSimpleAccountTable('school'); renderSimpleAccountTable('parking');
+  renderEtc(); renderCrime(); renderFingerprintList();
+}
+
+function fillSelect(id, items, placeholder){
+  const el = document.getElementById(id);
+  el.innerHTML = (placeholder ? `<option value="">${placeholder}</option>` : '') + items.map(i=>`<option value="${i}">${i}</option>`).join('');
+}
+
+function switchTab(name){
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('view-'+name).classList.add('active');
+}
+
+/* ---------------- Firestore 로드/저장 (+최초 시드) ---------------- */
+async function loadAll(){
+  const names = ['branches','school','parking','etc','crime','fingerprint'];
+  const docs = await Promise.all(names.map(n => db.collection(COL).doc(n).get()));
+  const [bDoc, schDoc, pkDoc, etcDoc, crDoc, fpDoc] = docs;
+
+  state.branches = bDoc.exists ? (bDoc.data().rows||[]) : SEED_BRANCHES.map(r=>({type:r[0],name:r[1],address:r[2],phone:r[3],biz_no:r[4],license_no:r[5],note:r[6]}));
+  if(!bDoc.exists) await saveDoc('branches', state.branches);
+
+  state.school = schDoc.exists ? (schDoc.data().rows||[]) : SEED_SCHOOL.map(r=>({branch:r[0],site:r[1],id:r[2],pw:r[3],note:r[4]}));
+  if(!schDoc.exists) await saveDoc('school', state.school);
+
+  state.parking = pkDoc.exists ? (pkDoc.data().rows||[]) : SEED_PARKING.map(r=>({branch:r[0],site:r[1],id:r[2],pw:r[3],note:r[4]}));
+  if(!pkDoc.exists) await saveDoc('parking', state.parking);
+
+  state.etc = etcDoc.exists ? (etcDoc.data().rows||[]) : SEED_ETC.map(r=>({name:r[0],id:r[1],pw:r[2],note:r[3]}));
+  if(!etcDoc.exists) await saveDoc('etc', state.etc);
+
+  state.crime = crDoc.exists ? (crDoc.data().rows||[]) : SEED_CRIME.map(r=>({branch:r[0],facility_id:r[1],verify_no:r[2],police:r[3],note:r[4]}));
+  if(!crDoc.exists) await saveDoc('crime', state.crime);
+
+  if(fpDoc.exists){ state.fingerprint = fpDoc.data().data || {}; }
+  else{
+    state.fingerprint = {};
+    Object.entries(SEED_FINGERPRINT).forEach(([b,rows])=>{ state.fingerprint[b] = rows.map(r=>({type:r[0],no:r[1],name:r[2],date:r[3],by:r[4]})); });
+    await db.collection(COL).doc('fingerprint').set({ data: state.fingerprint });
+  }
+}
+
+async function saveDoc(name, rows){ await db.collection(COL).doc(name).set({ rows }); }
+async function saveFingerprint(){ await db.collection(COL).doc('fingerprint').set({ data: state.fingerprint }); }
+
+/* ---------------- 1. 분원 기본정보 ---------------- */
+function setBranchFilter(mode){
+  branchFilterMode = mode;
+  ['brFilterAll','brFilterBranch','brFilterHq','brFilterFranchise','brFilterEtc'].forEach(id=>document.getElementById(id).classList.remove('primary'));
+  const map = {'전체':'brFilterAll','분원':'brFilterBranch','본사':'brFilterHq','가맹본사':'brFilterFranchise','기타':'brFilterEtc'};
+  document.getElementById(map[mode]).classList.add('primary');
+  renderBranches();
+}
+function renderBranches(){
+  const kw = document.getElementById('brSearch').value.trim().toLowerCase();
+  let rows = state.branches.filter(r => branchFilterMode==='전체' || r.type===branchFilterMode);
+  if(kw) rows = rows.filter(r => (r.name+r.address).toLowerCase().includes(kw));
+  document.getElementById('branchesTableWrap').innerHTML = `<table><thead><tr>
+    <th>구분</th><th>이름</th><th>주소</th><th>전화번호</th><th>사업자/법인등록번호</th><th>학원등록증번호</th><th>비고</th><th></th>
+  </tr></thead><tbody>
+  ${rows.map(r => {
+    const idx = state.branches.indexOf(r);
+    return `<tr>
+      <td><span class="tag ${ {'분원':'branch','본사':'hq','가맹본사':'franchise','기타':'etc'}[r.type] || 'etc' }">${r.type}</span></td>
+      <td><b>${r.name}</b></td><td>${r.address||'-'}</td><td>${r.phone||'-'}</td>
+      <td>${r.biz_no||'-'}</td><td>${r.license_no||'-'}</td><td>${r.note||'-'}</td>
+      <td class="actions-cell"><div class="actions-inner"><button class="edit-btn" onclick="editBranch(${idx})">수정</button>
+        <button class="danger" onclick="deleteBranch(${idx})">삭제</button></div></td>
+    </tr>`;
+  }).join('')}
+  </tbody></table>${rows.length===0?'<div class="empty">결과가 없습니다.</div>':''}`;
+}
+function editBranch(idx){
+  const r = state.branches[idx];
+  editing.branches = idx;
+  document.getElementById('brFormType').value = r.type;
+  document.getElementById('brFormName').value = r.name;
+  document.getElementById('brFormAddr').value = r.address;
+  document.getElementById('brFormPhone').value = r.phone;
+  document.getElementById('brFormBiz').value = r.biz_no;
+  document.getElementById('brFormLicense').value = r.license_no;
+  document.getElementById('brFormNote').value = r.note;
+  document.getElementById('brSubmitBtn').textContent = '수정 저장';
+  toggleForm('brForm', true);
+}
+async function submitBranch(){
+  const name = document.getElementById('brFormName').value.trim();
+  if(!name){ alert('이름을 입력해주세요.'); return; }
+  const rec = {
+    type: document.getElementById('brFormType').value, name,
+    address: document.getElementById('brFormAddr').value.trim(),
+    phone: document.getElementById('brFormPhone').value.trim(),
+    biz_no: document.getElementById('brFormBiz').value.trim(),
+    license_no: document.getElementById('brFormLicense').value.trim(),
+    note: document.getElementById('brFormNote').value.trim(),
+  };
+  if(editing.branches !== null){ state.branches[editing.branches] = rec; editing.branches = null; }
+  else { state.branches.push(rec); }
+  await saveDoc('branches', state.branches);
+  ['brFormName','brFormAddr','brFormPhone','brFormBiz','brFormLicense','brFormNote'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('brSubmitBtn').textContent = '등록';
+  toggleForm('brForm', false);
+  renderBranches();
+}
+async function deleteBranch(idx){
+  if(!confirm('삭제하시겠습니까?')) return;
+  state.branches.splice(idx,1);
+  await saveDoc('branches', state.branches);
+  renderBranches();
+}
+function exportBranches(){
+  const rows = state.branches.map(r=>({ 구분:r.type, 이름:r.name, 주소:r.address, 전화번호:r.phone, '사업자/법인등록번호':r.biz_no, 학원등록증번호:r.license_no, 비고:r.note }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '분원기본정보');
+  XLSX.writeFile(wb, `분원기본정보_${todayStr()}.xlsx`);
+}
+
+/* ---------------- 2·3. 학교안전지원시스템 / 주차등록 (공통 로직) ---------------- */
+const SIMPLE_CONFIG = {
+  school: { formPrefix:'sch', tableId:'schoolTableWrap', siteLabel:'캠퍼스명' },
+  parking: { formPrefix:'pk', tableId:'parkingTableWrap', siteLabel:'사이트/건물명' },
+};
+
+function renderSimpleAccountTable(key){
+  const cfg = SIMPLE_CONFIG[key];
+  const rows = state[key];
+  document.getElementById(cfg.tableId).innerHTML = `<table><thead><tr>
+    <th>분원</th><th>${cfg.siteLabel}</th><th>ID</th><th>비밀번호</th><th>비고</th><th></th>
+  </tr></thead><tbody>
+  ${rows.map(r => {
+    const idx = rows.indexOf(r);
+    return `<tr>
+      <td><b>${r.branch}</b></td><td>${r.site||'-'}</td>
+      <td class="pw">${r.id||'-'}</td><td class="pw">${r.pw||'-'}</td><td>${r.note||'-'}</td>
+      <td class="actions-cell"><div class="actions-inner"><button class="edit-btn" onclick="editSimpleAccount('${key}',${idx})">수정</button>
+        <button class="danger" onclick="deleteSimpleAccount('${key}',${idx})">삭제</button></div></td>
+    </tr>`;
+  }).join('')}
+  </tbody></table>${rows.length===0?'<div class="empty">등록된 계정이 없습니다.</div>':''}`;
+}
+function editSimpleAccount(key, idx){
+  const cfg = SIMPLE_CONFIG[key];
+  const r = state[key][idx];
+  editing[key] = idx;
+  document.getElementById(cfg.formPrefix+'FormBranch').value = r.branch;
+  document.getElementById(cfg.formPrefix+'FormSite').value = r.site;
+  document.getElementById(cfg.formPrefix+'FormId').value = r.id;
+  document.getElementById(cfg.formPrefix+'FormPw').value = r.pw;
+  document.getElementById(cfg.formPrefix+'FormNote').value = r.note;
+  document.getElementById(cfg.formPrefix+'SubmitBtn').textContent = '수정 저장';
+  toggleForm(cfg.formPrefix+'Form', true);
+}
+async function submitSimpleAccount(key){
+  const cfg = SIMPLE_CONFIG[key];
+  const branch = document.getElementById(cfg.formPrefix+'FormBranch').value;
+  if(!branch){ alert('분원을 선택해주세요.'); return; }
+  const rec = {
+    branch,
+    site: document.getElementById(cfg.formPrefix+'FormSite').value.trim(),
+    id: document.getElementById(cfg.formPrefix+'FormId').value.trim(),
+    pw: document.getElementById(cfg.formPrefix+'FormPw').value.trim(),
+    note: document.getElementById(cfg.formPrefix+'FormNote').value.trim(),
+  };
+  if(editing[key] !== null){ state[key][editing[key]] = rec; editing[key] = null; }
+  else { state[key].push(rec); }
+  await saveDoc(key, state[key]);
+  [cfg.formPrefix+'FormSite', cfg.formPrefix+'FormId', cfg.formPrefix+'FormPw', cfg.formPrefix+'FormNote'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById(cfg.formPrefix+'SubmitBtn').textContent = '등록';
+  toggleForm(cfg.formPrefix+'Form', false);
+  renderSimpleAccountTable(key);
+}
+async function deleteSimpleAccount(key, idx){
+  if(!confirm('삭제하시겠습니까?')) return;
+  state[key].splice(idx,1);
+  await saveDoc(key, state[key]);
+  renderSimpleAccountTable(key);
+}
+function exportAccountList(key, sheetName){
+  const cfg = SIMPLE_CONFIG[key];
+  const rows = state[key].map(r=>({ 분원:r.branch, [cfg.siteLabel]:r.site, ID:r.id, 비밀번호:r.pw, 비고:r.note }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  XLSX.writeFile(wb, `${sheetName}_${todayStr()}.xlsx`);
+}
+
+/* ---------------- 4. 기타 계정 ---------------- */
+function renderEtc(){
+  const kw = document.getElementById('etcSearch').value.trim().toLowerCase();
+  let rows = state.etc.slice();
+  if(kw) rows = rows.filter(r => (r.name||'').toLowerCase().includes(kw));
+  document.getElementById('etcTableWrap').innerHTML = `<table><thead><tr>
+    <th>이름</th><th>아이디</th><th>비밀번호</th><th>비고</th><th></th>
+  </tr></thead><tbody>
+  ${rows.map(r => {
+    const idx = state.etc.indexOf(r);
+    return `<tr>
+      <td><b>${r.name}</b></td><td class="pw">${r.id||'-'}</td><td class="pw">${r.pw||'-'}</td><td>${r.note||'-'}</td>
+      <td class="actions-cell"><div class="actions-inner"><button class="edit-btn" onclick="editEtc(${idx})">수정</button>
+        <button class="danger" onclick="deleteEtc(${idx})">삭제</button></div></td>
+    </tr>`;
+  }).join('')}
+  </tbody></table>${rows.length===0?'<div class="empty">등록된 항목이 없습니다.</div>':''}`;
+}
+function editEtc(idx){
+  const r = state.etc[idx];
+  editing.etc = idx;
+  document.getElementById('etcFormName').value = r.name;
+  document.getElementById('etcFormId').value = r.id;
+  document.getElementById('etcFormPw').value = r.pw;
+  document.getElementById('etcFormNote').value = r.note;
+  document.getElementById('etcSubmitBtn').textContent = '수정 저장';
+  toggleForm('etcForm', true);
+}
+async function submitEtc(){
+  const name = document.getElementById('etcFormName').value.trim();
+  if(!name){ alert('이름을 입력해주세요.'); return; }
+  const rec = {
+    name,
+    id: document.getElementById('etcFormId').value.trim(),
+    pw: document.getElementById('etcFormPw').value.trim(),
+    note: document.getElementById('etcFormNote').value.trim(),
+  };
+  if(editing.etc !== null){ state.etc[editing.etc] = rec; editing.etc = null; }
+  else { state.etc.push(rec); }
+  await saveDoc('etc', state.etc);
+  ['etcFormName','etcFormId','etcFormPw','etcFormNote'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('etcSubmitBtn').textContent = '등록';
+  toggleForm('etcForm', false);
+  renderEtc();
+}
+async function deleteEtc(idx){
+  if(!confirm('삭제하시겠습니까?')) return;
+  state.etc.splice(idx,1);
+  await saveDoc('etc', state.etc);
+  renderEtc();
+}
+function exportEtc(){
+  const rows = state.etc.map(r=>({ 이름:r.name, 아이디:r.id, 비밀번호:r.pw, 비고:r.note }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '기타정보');
+  XLSX.writeFile(wb, `기타정보_${todayStr()}.xlsx`);
+}
+
+/* ---------------- 5. 범죄경력 시설정보 ---------------- */
+function renderCrime(){
+  document.getElementById('crimeTableWrap').innerHTML = `<table><thead><tr>
+    <th>분원</th><th>시설ID</th><th>검증번호</th><th>관할경찰서</th><th>비고</th><th></th>
+  </tr></thead><tbody>
+  ${state.crime.map(r => {
+    const idx = state.crime.indexOf(r);
+    return `<tr>
+      <td><b>${r.branch}</b></td><td class="pw">${r.facility_id||'-'}</td><td class="pw">${r.verify_no||'-'}</td>
+      <td>${r.police||'-'}</td><td>${r.note||'-'}</td>
+      <td class="actions-cell"><div class="actions-inner"><button class="edit-btn" onclick="editCrime(${idx})">수정</button>
+        <button class="danger" onclick="deleteCrime(${idx})">삭제</button></div></td>
+    </tr>`;
+  }).join('')}
+  </tbody></table>${state.crime.length===0?'<div class="empty">등록된 정보가 없습니다.</div>':''}`;
+}
+function editCrime(idx){
+  const r = state.crime[idx];
+  editing.crime = idx;
+  document.getElementById('crFormBranch').value = r.branch;
+  document.getElementById('crFormFacilityId').value = r.facility_id;
+  document.getElementById('crFormVerify').value = r.verify_no;
+  document.getElementById('crFormPolice').value = r.police;
+  document.getElementById('crFormNote').value = r.note;
+  document.getElementById('crSubmitBtn').textContent = '수정 저장';
+  toggleForm('crForm', true);
+}
+async function submitCrime(){
+  const branch = document.getElementById('crFormBranch').value;
+  if(!branch){ alert('분원을 선택해주세요.'); return; }
+  const rec = {
+    branch,
+    facility_id: document.getElementById('crFormFacilityId').value.trim(),
+    verify_no: document.getElementById('crFormVerify').value.trim(),
+    police: document.getElementById('crFormPolice').value.trim(),
+    note: document.getElementById('crFormNote').value.trim(),
+  };
+  if(editing.crime !== null){ state.crime[editing.crime] = rec; editing.crime = null; }
+  else { state.crime.push(rec); }
+  await saveDoc('crime', state.crime);
+  ['crFormFacilityId','crFormVerify','crFormPolice','crFormNote'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('crSubmitBtn').textContent = '등록';
+  toggleForm('crForm', false);
+  renderCrime();
+}
+async function deleteCrime(idx){
+  if(!confirm('삭제하시겠습니까?')) return;
+  state.crime.splice(idx,1);
+  await saveDoc('crime', state.crime);
+  renderCrime();
+}
+function exportCrime(){
+  const rows = state.crime.map(r=>({ 분원:r.branch, 시설ID:r.facility_id, 검증번호:r.verify_no, 관할경찰서:r.police, 비고:r.note }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '범죄경력시설정보');
+  XLSX.writeFile(wb, `범죄경력시설정보_${todayStr()}.xlsx`);
+}
+
+/* ---------------- 6. 출입보안(지문) 현황 ---------------- */
+function renderFingerprintSearch(){
+  const kw = document.getElementById('fpSearchName').value.trim();
+  const wrap = document.getElementById('fpSearchResult');
+  if(!kw){ wrap.innerHTML = ''; return; }
+  const results = [];
+  Object.entries(state.fingerprint).forEach(([branch, rows]) => {
+    rows.forEach(r => { if((r.name||'').includes(kw)) results.push({ branch, ...r }); });
+  });
+  wrap.innerHTML = results.length===0
+    ? `<div class="empty">"${kw}" 이름으로 등록된 기록이 없습니다.</div>`
+    : results.map(r => `
+      <div class="search-result-item">
+        <div><b>${r.name}</b> — <span class="tag branch">${r.branch}</span> <span class="roster-badge ${r.type}">${r.type}</span> 번호 ${r.no||'-'}</div>
+        <div class="note" style="margin:0;">${r.date?('등록일 '+r.date):''} ${r.by?('· 등록자 '+r.by):''}</div>
+      </div>`).join('');
+}
+function renderFingerprintList(){
+  const branch = document.getElementById('fpViewBranch').value || BRANCHES[0];
+  document.getElementById('fpFormBranch').value = branch;
+  const rows = state.fingerprint[branch] || [];
+  // 번호(카드번호) 순으로 정렬 — 원본 배열을 직접 정렬해서 수정/삭제 시 인덱스가 어긋나지 않게 함
+  rows.sort((a, b) => {
+    const na = parseInt(a.no, 10);
+    const nb = parseInt(b.no, 10);
+    const va = isNaN(na) ? Infinity : na;
+    const vb = isNaN(nb) ? Infinity : nb;
+    return va - vb;
+  });
+  let html = `<table><thead><tr><th>구분</th><th>번호</th><th>이름</th><th>등록일</th><th>등록자</th><th></th></tr></thead><tbody>
+  ${rows.map(r => {
+    const idx = rows.indexOf(r);
+    return `<tr>
+      <td><span class="roster-badge ${r.type}">${r.type}</span></td><td>${r.no||'-'}</td>
+      <td><b>${r.name}</b></td><td>${r.date||'-'}</td><td>${r.by||'-'}</td>
+      <td class="actions-cell"><div class="actions-inner"><button class="edit-btn" onclick="editFingerprint('${branch}',${idx})">수정</button>
+        <button class="danger" onclick="deleteFingerprint('${branch}',${idx})">삭제</button></div></td>
+    </tr>`;
+  }).join('')}
+  </tbody></table>${rows.length===0?'<div class="empty">등록된 인원이 없습니다.</div>':''}`;
+  document.getElementById('fingerprintTableWrap').innerHTML = html;
+}
+function editFingerprint(branch, idx){
+  const r = state.fingerprint[branch][idx];
+  editing.fingerprint = { branch, idx };
+  document.getElementById('fpFormBranch').value = branch;
+  document.getElementById('fpFormType').value = r.type;
+  document.getElementById('fpFormNo').value = r.no;
+  document.getElementById('fpFormName').value = r.name;
+  document.getElementById('fpFormDate').value = r.date || '';
+  document.getElementById('fpFormBy').value = r.by;
+  document.getElementById('fpSubmitBtn').textContent = '수정 저장';
+  toggleForm('fpForm', true);
+}
+async function submitFingerprint(){
+  const branch = document.getElementById('fpFormBranch').value;
+  const name = document.getElementById('fpFormName').value.trim();
+  if(!name){ alert('이름을 입력해주세요.'); return; }
+  const rec = {
+    type: document.getElementById('fpFormType').value,
+    no: document.getElementById('fpFormNo').value.trim(),
+    name,
+    date: document.getElementById('fpFormDate').value,
+    by: document.getElementById('fpFormBy').value.trim(),
+  };
+  state.fingerprint[branch] = state.fingerprint[branch] || [];
+  if(editing.fingerprint && editing.fingerprint.branch === branch){
+    state.fingerprint[branch][editing.fingerprint.idx] = rec;
+    editing.fingerprint = null;
+  }else{
+    state.fingerprint[branch].push(rec);
+  }
+  await saveFingerprint();
+  ['fpFormNo','fpFormName','fpFormBy'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fpSubmitBtn').textContent = '등록';
+  toggleForm('fpForm', false);
+  renderFingerprintList();
+}
+async function deleteFingerprint(branch, idx){
+  if(!confirm('삭제하시겠습니까?')) return;
+  state.fingerprint[branch].splice(idx,1);
+  await saveFingerprint();
+  renderFingerprintList();
+}
+function exportFingerprint(){
+  const branch = document.getElementById('fpViewBranch').value;
+  const rows = (state.fingerprint[branch]||[]).map(r=>({ 구분:r.type, 번호:r.no, 이름:r.name, 등록일:r.date, 등록자:r.by }));
+  if(rows.length===0){ alert('내보낼 데이터가 없습니다.'); return; }
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, branch);
+  XLSX.writeFile(wb, `출입보안현황_${branch}_${todayStr()}.xlsx`);
+}
+function exportFingerprintAll(){
+  const wb = XLSX.utils.book_new();
+  let any = false;
+  BRANCHES.forEach(branch => {
+    const rows = (state.fingerprint[branch]||[]).map(r=>({ 구분:r.type, 번호:r.no, 이름:r.name, 등록일:r.date, 등록자:r.by }));
+    const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ 구분:'', 번호:'', 이름:'(등록된 인원 없음)', 등록일:'', 등록자:'' }]);
+    XLSX.utils.book_append_sheet(wb, ws, branch.slice(0,31));
+    if(rows.length) any = true;
+  });
+  if(!any){ alert('내보낼 데이터가 없습니다.'); return; }
+  XLSX.writeFile(wb, `출입보안현황_전체분원_${todayStr()}.xlsx`);
+}
+
+function todayStr(){
+  const d = new Date();
+  return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+}
+</script>
+
+</div>
+</body>
+</html>

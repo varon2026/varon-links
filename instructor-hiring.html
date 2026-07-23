@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>바론 강사채용해임현황</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.3/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+  :root{
+    --navy:#1E3A66; --navy-dark:#132844; --gold:#A9790E;
+    --bg:#F5F6F8; --card:#FFFFFF; --border:#E2E5EA; --text:#242832; --muted:#7A8090;
+    --danger:#C0392B; --ok:#2F9E44; --wait:#E8A93C; --hold:#8B8F99;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif;}
+
+  #gate{position:fixed;inset:0;background:var(--navy-dark);display:flex;align-items:center;justify-content:center;z-index:9999;}
+  #gate .box{background:#fff;border-radius:16px;padding:36px 32px;width:320px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3);}
+  #gate .icon{width:52px;height:52px;border-radius:14px;background:var(--navy);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;}
+  #gate h2{margin:0 0 6px;font-size:17px;color:var(--navy);}
+  #gate p{margin:0 0 18px;font-size:12px;color:var(--muted);}
+  #gate input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:10px;font-size:15px;text-align:center;letter-spacing:2px;margin-bottom:12px;}
+  #gate button{width:100%;padding:11px;border:none;border-radius:10px;background:var(--navy);color:#fff;font-weight:700;font-size:14px;cursor:pointer;}
+  #gate .err{color:var(--danger);font-size:12px;margin-top:8px;min-height:16px;}
+  #appRoot{display:none;}
+
+  header{background:var(--navy);color:#fff;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;}
+  header h1{margin:0;font-size:19px;}
+  header .sub{margin:2px 0 0;font-size:12px;color:#B9C4DC;}
+  header .sub a{color:#B9C4DC;}
+  .lock-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;}
+
+  main{max-width:1100px;margin:0 auto;padding:20px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;}
+  .card h2{font-size:14px;margin:0 0 12px;font-weight:800;color:var(--navy);}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px;}
+  .stat{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:.15s;}
+  .stat:hover{border-color:var(--navy);}
+  .stat.active{background:var(--navy);border-color:var(--navy);}
+  .stat.active .num,.stat.active .lab{color:#fff;}
+  .stat.warn.active{background:#B45309;border-color:#B45309;}
+  .stat .num{font-size:20px;font-weight:800;color:var(--navy);}
+  .stat .lab{font-size:11px;color:var(--muted);margin-top:2px;}
+
+  .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+  .filters input, .filters select{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;}
+  .filters input[type=text]{flex:1;min-width:160px;}
+
+  button.primary{background:var(--navy);color:#fff;border:none;padding:9px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;}
+  button.secondary{background:#fff;color:var(--navy);border:1px solid var(--border);padding:9px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;}
+  button.danger{background:#fff;color:var(--danger);border:1px solid #F3C9C4;padding:6px 10px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;}
+  button.small{padding:6px 10px;font-size:12px;}
+  button.ghost-add{background:#EDF2FA;color:var(--navy);border:1px dashed var(--navy);padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:12px;}
+  .chip{background:#fff;color:var(--muted);border:1px solid var(--border);padding:8px 16px;border-radius:999px;font-weight:700;font-size:13px;cursor:pointer;}
+  .chip.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+
+  .form-box{border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;background:#FAFBFC;display:none;}
+  .form-box.open{display:block;}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:12px;}
+  .form-grid label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:var(--muted);}
+  .form-grid input, .form-grid select, .form-grid textarea{padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;}
+
+  .empty{text-align:center;padding:40px 20px;color:var(--muted);}
+
+  .person-card{border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;background:#fff;cursor:pointer;}
+  .person-card:hover{border-color:var(--navy);}
+  .person-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;}
+  .person-name{font-size:15px;font-weight:800;color:var(--text);}
+  .person-meta{font-size:12px;color:var(--muted);margin-top:2px;}
+  .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:800;color:#fff;white-space:nowrap;}
+  .badge.채용중{background:var(--wait);}
+  .badge.재직중{background:var(--ok);}
+  .badge.퇴사중{background:#3E7BD6;}
+  .badge.퇴사완료{background:var(--hold);}
+  .sub-badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;background:#EEF1F5;color:var(--muted);margin-left:6px;}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:500;padding:20px;}
+  .modal-bg.show{display:flex;}
+  .modal{background:#fff;border-radius:14px;max-width:640px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;}
+  .modal h3{margin:0 0 14px;font-size:16px;color:var(--navy);}
+  .modal-section{border-top:1px solid var(--border);padding-top:14px;margin-top:14px;}
+  .modal-section h4{font-size:13px;color:var(--navy);margin:0 0 10px;}
+  .checklist-item{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;}
+  .checklist-item input{width:16px;height:16px;}
+  .file-input-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;}
+  .file-input-row img{max-width:60px;max-height:60px;border-radius:6px;border:1px solid var(--border);cursor:pointer;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+
+  footer{text-align:center;font-size:11px;color:var(--muted);padding:20px;}
+  @media (max-width:700px){ .stat-grid{grid-template-columns:repeat(2,1fr);} }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="box">
+    <div class="icon">🔒</div>
+    <h2>강사채용해임현황</h2>
+    <p>주민번호 등 민감정보가 포함된 페이지입니다.<br>총무팀 담당자만 접근 가능합니다.</p>
+    <input type="password" id="gatePw" placeholder="비밀번호" autocomplete="new-password" name="ih_gate_pw_field" onkeydown="if(event.key==='Enter')checkGate()">
+    <button onclick="checkGate()">입장</button>
+    <div class="err" id="gateErr"></div>
+  </div>
+</div>
+
+<div id="appRoot">
+
+<header>
+  <div>
+    <h1>바론 강사채용해임현황</h1>
+    <div class="sub">채용·해임 진행상황 · 나이스 신고 지연 관리 · <a href="https://varon2026.github.io/varon-links/">← 바론링크로 돌아가기</a></div>
+  </div>
+  <button class="lock-btn" onclick="lockApp()">🔒 잠그기</button>
+</header>
+
+<main>
+
+  <div class="stat-grid" id="statGrid"></div>
+
+  <div class="card">
+    <button class="ghost-add" onclick="toggleForm('newForm')">➕ 신규 강사 등록 (채용 시작)</button>
+    <div class="form-box" id="newForm">
+      <div class="form-grid">
+        <label>이름 <input type="text" id="nFormName"></label>
+        <label>연락처 <input type="text" id="nFormPhone"></label>
+        <label>소속분원
+          <select id="nFormBranch"><option>장안</option><option>서수원</option><option>수원</option><option>운정1</option><option>운정2</option><option>남동탄</option></select>
+        </label>
+        <label>이메일 <input type="text" id="nFormEmail"></label>
+        <label>주민번호 <input type="text" id="nFormSsn" placeholder="000000-0000000"></label>
+        <label>주소 <input type="text" id="nFormAddr"></label>
+        <label>입사(예정)일 <input type="date" id="nFormHireDate"></label>
+      </div>
+      <button class="primary" onclick="submitNewInstructor()">등록</button>
+      <button class="secondary" onclick="toggleForm('newForm')">취소</button>
+    </div>
+
+    <div class="filters" id="branchButtons"></div>
+    <div class="filters">
+      <select id="fLifecycle" onchange="renderList()">
+        <option value="">전체 상태</option>
+        <option>채용중</option><option>재직중</option><option>퇴사중</option><option>퇴사완료</option>
+      </select>
+      <input type="text" id="fSearch" placeholder="이름 검색" oninput="renderList()">
+      <span style="font-size:12px;color:var(--muted);">입/퇴사일</span>
+      <input type="date" id="fFrom" onchange="renderList()">
+      <span style="color:var(--muted);">~</span>
+      <input type="date" id="fTo" onchange="renderList()">
+      <button class="secondary small" onclick="exportList()">⬇ 엑셀로 내보내기</button>
+    </div>
+    <div id="branchSummary"></div>
+    <div id="listWrap"></div>
+  </div>
+
+</main>
+
+<footer>바론네트웍스(주) 총무팀 · 강사채용해임현황 v1.0 · 민감정보 포함 — 화면 공유 시 주의해주세요</footer>
+
+<!-- 상세/처리 모달 -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<!-- 사진 확대 -->
+<div class="modal-bg" id="photoModalBg" onclick="this.classList.remove('show')">
+  <img id="photoModalImg" style="max-width:90%;max-height:90%;border-radius:8px;">
+</div>
+
+<script>
+const BRANCHES = ['장안','서수원','수원','운정1','운정2','남동탄'];
+const GATE_PASSWORD = '2026';
+const OVERDUE_DAYS = 10;
+
+const HIRE_CHECKLIST_DEFAULT = ['이력서','등본','통장사본','범죄경력조회서','졸업증명서','신분증사본','다우오피스 계정생성','Q앱 계정생성','iMS 계정생성','강사등록','fluenC 교육'];
+const LEAVE_CHECKLIST_DEFAULT = ['다우오피스 계정삭제','Q앱 계정삭제','iMS 계정삭제','사직서','금품청산합의서','출입등록삭제','G2Works 계정삭제','강사게시표 수정','직원명부 수정'];
+const ATTACHMENT_DEFAULT = ['범죄경력조회서','졸업증명서'];
+
+const firebaseConfig = {
+  apiKey: "AIzaSyACokruLFwbkCpxriOdQgVZAQfryYBmUxM",
+  authDomain: "baron-shuttle-ops.firebaseapp.com",
+  projectId: "baron-shuttle-ops",
+  storageBucket: "baron-shuttle-ops.firebasestorage.app",
+  messagingSenderId: "278466071248",
+  appId: "1:278466071248:web:e22df780d05e6b46772cd5"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const COL = 'instructor_data';
+
+let allInstructors = [];
+let quickFilterMode = 'all';
+let quickOverdueOnly = false;
+let selectedBranch = '';
+
+function renderBranchButtons(){
+  const items = ['전체 분원', ...BRANCHES];
+  document.getElementById('branchButtons').innerHTML = items.map(b => {
+    const val = b === '전체 분원' ? '' : b;
+    return `<button type="button" class="chip ${selectedBranch===val?'active':''}" onclick="setBranchFilter('${val}')">${b}</button>`;
+  }).join('');
+}
+function setBranchFilter(b){
+  selectedBranch = b;
+  renderBranchButtons();
+  renderBranchSummary();
+  renderList();
+}
+
+/* ---------------- 잠금 화면 ---------------- */
+function checkGate(){
+  const val = document.getElementById('gatePw').value;
+  if(val === GATE_PASSWORD){
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('appRoot').style.display = 'block';
+    sessionStorage.setItem('ih_unlocked', '1');
+    boot();
+  }else{
+    document.getElementById('gateErr').textContent = '비밀번호가 올바르지 않습니다.';
+  }
+}
+function lockApp(){ sessionStorage.removeItem('ih_unlocked'); location.reload(); }
+window.addEventListener('DOMContentLoaded', () => {
+  if(sessionStorage.getItem('ih_unlocked') === '1'){
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('appRoot').style.display = 'block';
+    boot();
+  }
+});
+
+function toggleForm(id, forceOpen){
+  const el = document.getElementById(id);
+  if(forceOpen === true) el.classList.add('open');
+  else if(forceOpen === false) el.classList.remove('open');
+  else el.classList.toggle('open');
+}
+
+async function boot(){
+  await loadAll();
+  renderStats();
+  renderBranchButtons();
+  renderBranchSummary();
+  renderList();
+}
+
+async function loadAll(){
+  const snap = await db.collection(COL).get();
+  allInstructors = snap.docs.map(doc => normalizeInstructor({ id: doc.id, ...doc.data() }));
+}
+
+// 예전 형식(체크리스트가 객체, 첨부파일이 고정 키)으로 저장된 기존 데이터를
+// 새 형식(배열)으로 안전하게 변환한다. 이게 없으면 예전 데이터를 클릭했을 때
+// 화면이 깨져서 상세창이 안 열리는 문제가 생긴다.
+function normalizeInstructor(p){
+  if(!Array.isArray(p.checklist)){
+    if(p.checklist && typeof p.checklist === 'object'){
+      p.checklist = Object.entries(p.checklist).map(([item, checked]) => ({ item, checked: !!checked, date: null }));
+    }else{
+      const base = (p.lifecycle === '퇴사중' || p.lifecycle === '퇴사완료') ? LEAVE_CHECKLIST_DEFAULT : HIRE_CHECKLIST_DEFAULT;
+      p.checklist = base.map(item => ({ item, checked: false, date: null }));
+    }
+  }
+  if(!Array.isArray(p.attachments)){
+    const legacy = [
+      { key:'photo_crime', label:'범죄경력조회서' },
+      { key:'photo_grad', label:'졸업증명서' },
+      { key:'photo_contract', label:'계약서 사본' },
+    ];
+    p.attachments = legacy
+      .filter(l => p[l.key])
+      .map(l => ({ label: l.label, image: p[l.key], note: '' }));
+    if(p.attachments.length === 0){
+      p.attachments = ATTACHMENT_DEFAULT.map(label => ({ label, image: null, note: '' }));
+    }
+  }
+  if(p.report_method === undefined){
+    p.report_method = p.report_method_request || '';
+  }
+  return p;
+}
+
+function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function daysSince(dateStr){
+  if(!dateStr) return 0;
+  const d0 = new Date(dateStr); const d1 = new Date(todayStr());
+  return Math.floor((d1 - d0) / 86400000);
+}
+// 재직중 여부는 교육청 승인과 무관하게 "입사일이 지났는가"로 자동 판단한다
+// (승인 전에 먼저 근무를 시작하는 경우가 있기 때문). 퇴사중/퇴사완료는 "해임 처리 시작"
+// 버튼이나 승인완료 입력으로만 바뀌는 명시적 상태라 그대로 둔다.
+function effectiveLifecycle(p){
+  if(p.lifecycle === '퇴사중' || p.lifecycle === '퇴사완료') return p.lifecycle;
+  if(p.hire_date && p.hire_date <= todayStr()) return '재직중';
+  return '채용중';
+}
+
+function isOverdue(p){
+  return (p.substatus === '서류준비' || p.substatus === '승인요청') && daysSince(p.event_base_date) >= OVERDUE_DAYS;
+}
+
+/* ---------------- 통계 박스 ---------------- */
+function renderStats(){
+  const hiring = allInstructors.filter(p=>effectiveLifecycle(p)==='채용중');
+  const active = allInstructors.filter(p=>effectiveLifecycle(p)==='재직중');
+  const leaving = allInstructors.filter(p=>effectiveLifecycle(p)==='퇴사중');
+  const overdue = allInstructors.filter(isOverdue);
+  const grid = document.getElementById('statGrid');
+  grid.innerHTML = `
+    <div class="stat ${quickFilterMode==='all'?'active':''}" onclick="setQuickFilter('all')"><div class="num">${allInstructors.length}</div><div class="lab">전체 인원</div></div>
+    <div class="stat ${quickFilterMode==='hiring'?'active':''}" onclick="setQuickFilter('hiring')"><div class="num">${hiring.length}</div><div class="lab">채용중</div></div>
+    <div class="stat ${quickFilterMode==='active'?'active':''}" onclick="setQuickFilter('active')"><div class="num">${active.length}</div><div class="lab">재직중</div></div>
+    <div class="stat ${quickFilterMode==='leaving'?'active':''}" onclick="setQuickFilter('leaving')"><div class="num">${leaving.length}</div><div class="lab">퇴사(해임)중</div></div>
+    <div class="stat warn ${quickFilterMode==='overdue'?'active':''}" onclick="setQuickFilter('overdue')"><div class="num">${overdue.length}</div><div class="lab">10일 이상 지연</div></div>
+  `;
+}
+function setQuickFilter(mode){
+  quickFilterMode = mode;
+  document.getElementById('fLifecycle').value = '';
+  quickOverdueOnly = (mode === 'overdue');
+  if(mode === 'hiring') document.getElementById('fLifecycle').value = '채용중';
+  if(mode === 'active') document.getElementById('fLifecycle').value = '재직중';
+  if(mode === 'leaving') document.getElementById('fLifecycle').value = '퇴사중';
+  renderStats();
+  renderList();
+}
+
+function renderBranchSummary(){
+  const branch = selectedBranch;
+  const el = document.getElementById('branchSummary');
+  if(!branch){ el.innerHTML = ''; return; }
+  const rows = allInstructors.filter(p => p.branch === branch);
+  const count = (lc) => rows.filter(p => effectiveLifecycle(p) === lc).length;
+  el.innerHTML = `
+    <div style="background:#EDF2FA;border:1px solid var(--border);border-radius:10px;padding:10px 16px;margin-bottom:14px;font-size:13px;font-weight:700;color:var(--navy);">
+      ${escapeHtml(branch)}분원 —
+      채용중 ${count('채용중')}명 ·
+      재직중 ${count('재직중')}명 ·
+      퇴사중 ${count('퇴사중')}명 ·
+      퇴사완료 ${count('퇴사완료')}명
+      <span style="font-weight:400;color:var(--muted);">(총 ${rows.length}명)</span>
+    </div>`;
+}
+
+/* ---------------- 목록 ---------------- */
+function filteredRows(){
+  const branch = selectedBranch;
+  const lifecycle = document.getElementById('fLifecycle').value;
+  const kw = document.getElementById('fSearch').value.trim().toLowerCase();
+  const from = document.getElementById('fFrom').value;
+  const to = document.getElementById('fTo').value;
+  return allInstructors.filter(p => {
+    if(branch && p.branch !== branch) return false;
+    if(lifecycle && effectiveLifecycle(p) !== lifecycle) return false;
+    if(quickOverdueOnly && !isOverdue(p)) return false;
+    if(kw && !(p.name||'').toLowerCase().includes(kw)) return false;
+    if(from || to){
+      const refDate = p.leave_date || p.hire_date || '';
+      if(!refDate) return false;
+      if(from && refDate < from) return false;
+      if(to && refDate > to) return false;
+    }
+    return true;
+  }).sort((a,b) => (b.created_at?.toMillis?.()||0) - (a.created_at?.toMillis?.()||0));
+}
+
+function renderList(){
+  const rows = filteredRows();
+  const wrap = document.getElementById('listWrap');
+  if(!rows.length){ wrap.innerHTML = '<div class="empty">조건에 맞는 강사가 없습니다.</div>'; return; }
+  wrap.innerHTML = rows.map(p => {
+    const overdue = isOverdue(p);
+    const dday = overdue ? ` D+${daysSince(p.event_base_date)}` : '';
+    const lc = effectiveLifecycle(p);
+    return `
+    <div class="person-card" onclick="openDetail('${p.id}')">
+      <div class="person-top">
+        <div>
+          <span class="person-name">${escapeHtml(p.name||'')}</span>
+          <span class="sub-badge">${escapeHtml(p.branch||'')}</span>
+        </div>
+        <div>
+          <span class="badge ${lc}">${lc}${dday}</span>
+          ${p.substatus ? `<span class="sub-badge">${p.substatus}</span>` : ''}
+        </div>
+      </div>
+      <div class="person-meta">
+        입사일 ${p.hire_date||'-'} ${p.leave_date ? '· 퇴사일 '+p.leave_date : ''} · 연락처 ${p.phone||'-'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escapeHtml(s){
+  if(!s) return '';
+  return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ---------------- 신규 등록 ---------------- */
+async function submitNewInstructor(){
+  const name = document.getElementById('nFormName').value.trim();
+  if(!name){ alert('이름을 입력해주세요.'); return; }
+  const hireDate = document.getElementById('nFormHireDate').value || todayStr();
+  const payload = {
+    name,
+    phone: document.getElementById('nFormPhone').value.trim(),
+    branch: document.getElementById('nFormBranch').value,
+    email: document.getElementById('nFormEmail').value.trim(),
+    ssn: document.getElementById('nFormSsn').value.trim(),
+    address: document.getElementById('nFormAddr').value.trim(),
+    hire_date: hireDate,
+    leave_date: null,
+    lifecycle: '채용중',
+    substatus: '서류준비',
+    event_base_date: hireDate,
+    checklist: HIRE_CHECKLIST_DEFAULT.map(item => ({ item, checked: false, date: null })),
+    attachments: ATTACHMENT_DEFAULT.map(label => ({ label, image: null, note: '' })),
+    report_method: '', report_date_request: '', report_date_complete: '',
+    created_at: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+  await db.collection(COL).add(payload);
+  ['nFormName','nFormPhone','nFormEmail','nFormSsn','nFormAddr'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nFormHireDate').value = '';
+  toggleForm('newForm', false);
+  await loadAll(); renderStats(); renderList();
+}
+
+/* ---------------- 상세 모달 ---------------- */
+function compressImage(file, maxDim=1000, quality=0.6){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if(w > maxDim || h > maxDim){
+          const ratio = Math.min(maxDim/w, maxDim/h);
+          w = Math.round(w*ratio); h = Math.round(h*ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+let detailId = null;
+function openDetail(id){
+  detailId = id;
+  const p = allInstructors.find(x=>x.id===id);
+  if(!p) return;
+  const checklist = p.checklist || [];
+  const attachments = p.attachments || [];
+
+  document.getElementById('modalBody').innerHTML = `
+    <h3>${escapeHtml(p.name)} <span class="badge ${effectiveLifecycle(p)}" style="margin-left:8px;">${effectiveLifecycle(p)}</span></h3>
+
+    <div class="form-grid">
+      <label>이름 <input type="text" id="dName" value="${escapeHtml(p.name||'')}"></label>
+      <label>연락처 <input type="text" id="dPhone" value="${escapeHtml(p.phone||'')}"></label>
+      <label>소속분원 <select id="dBranch">${BRANCHES.map(b=>`<option ${b===p.branch?'selected':''}>${b}</option>`).join('')}</select></label>
+      <label>이메일 <input type="text" id="dEmail" value="${escapeHtml(p.email||'')}"></label>
+      <label>주민번호 <input type="text" id="dSsn" value="${escapeHtml(p.ssn||'')}"></label>
+      <label>주소 <input type="text" id="dAddr" value="${escapeHtml(p.address||'')}"></label>
+      <label>입사일 <input type="date" id="dHireDate" value="${p.hire_date||''}"></label>
+      <label>퇴사일 <input type="date" id="dLeaveDate" value="${p.leave_date||''}"></label>
+    </div>
+
+    <div class="modal-section">
+      <h4>첨부 서류(이미지)</h4>
+      <div id="attachmentList">
+        ${attachments.map((a, i) => fileRow(a, i)).join('')}
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <input type="text" id="newAttachLabel" placeholder="새 서류 항목명 (예: 재직증명서)" style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;">
+        <button type="button" class="secondary small" onclick="addAttachmentRow()">+ 항목 추가</button>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <h4>${p.lifecycle==='퇴사중' || p.lifecycle==='퇴사완료' ? '퇴사 처리 체크리스트' : '채용 처리 체크리스트'}</h4>
+      <div id="checklistArea">
+        ${checklist.map((c, i) => checklistRow(c, i)).join('')}
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <input type="text" id="newChecklistItem" placeholder="새 체크 항목명" style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;">
+        <button type="button" class="secondary small" onclick="addChecklistRow()">+ 항목 추가</button>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <h4>교육청 신고 진행</h4>
+      <div class="form-grid">
+        <label>신고 방식
+          <select id="dReqMethod">
+            <option value="" ${!p.report_method?'selected':''}>선택안함</option>
+            <option ${p.report_method==='방문'?'selected':''}>방문</option>
+            <option ${p.report_method==='온라인'?'selected':''}>온라인</option>
+          </select>
+        </label>
+        <label>승인요청 날짜 <input type="date" id="dReqDate" value="${p.report_date_request||''}"></label>
+        <label>승인완료 날짜 <input type="date" id="dDoneDate" value="${p.report_date_complete||''}"></label>
+      </div>
+      <div style="font-size:11px;color:var(--muted);">승인요청 날짜를 입력하면 "승인요청" 단계로, 승인완료 날짜까지 입력하면 "승인완료" 단계로 자동 전환됩니다 (채용→재직중 / 해임→퇴사완료).</div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="danger" onclick="deleteInstructor('${p.id}')" style="margin-right:auto;">🗑 이 강사 삭제</button>
+      ${effectiveLifecycle(p)==='재직중' ? `<button class="danger" onclick="startTermination('${p.id}')">해임 처리 시작</button>` : ''}
+      ${p.lifecycle==='퇴사중' ? `<button class="secondary" onclick="cancelTermination('${p.id}')">↩ 해임 처리 철회</button>` : ''}
+      <button class="secondary" onclick="closeDetail()">닫기</button>
+      <button class="primary" onclick="saveDetail()">저장</button>
+    </div>
+  `;
+  document.getElementById('modalBg').classList.add('show');
+}
+
+function fileRow(a, i){
+  return `
+  <div class="file-input-row" data-idx="${i}">
+    <span style="width:130px;">${escapeHtml(a.label)}</span>
+    ${a.image ? `<img src="${a.image}" onclick="showPhoto('${a.image}')">` : '<span style="color:var(--muted);">없음</span>'}
+    <input type="file" accept="image/*" onchange="handleFileSelect(${i}, event)">
+    <label style="font-size:11px;color:var(--muted);margin-left:4px;">비고 <input type="text" value="${escapeHtml(a.note||'')}" placeholder="간단 메모" onchange="updateAttachmentNote(${i}, this.value)" style="padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;width:110px;"></label>
+    <button type="button" class="danger small" onclick="removeAttachmentRow(${i})">삭제</button>
+  </div>`;
+}
+function checklistRow(c, i){
+  return `
+  <div class="checklist-item" data-idx="${i}" style="justify-content:space-between;">
+    <label style="display:flex;align-items:center;gap:8px;flex:1;">
+      <input type="checkbox" ${c.checked?'checked':''} onchange="toggleChecklistItem(${i}, this.checked)">
+      ${escapeHtml(c.item)}
+    </label>
+    <input type="date" value="${c.date||''}" onchange="updateChecklistDate(${i}, this.value)" style="padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;" title="완료/회신 날짜(선택)">
+    <button type="button" class="danger small" onclick="removeChecklistRow(${i})">삭제</button>
+  </div>`;
+}
+
+let workingChecklist = [];
+let workingAttachments = [];
+
+function addChecklistRow(){
+  const p = allInstructors.find(x=>x.id===detailId);
+  const input = document.getElementById('newChecklistItem');
+  const val = input.value.trim();
+  if(!val) return;
+  p.checklist = p.checklist || [];
+  p.checklist.push({ item: val, checked: false, date: null });
+  input.value = '';
+  document.getElementById('checklistArea').innerHTML = p.checklist.map((c,i)=>checklistRow(c,i)).join('');
+}
+function removeChecklistRow(i){
+  const p = allInstructors.find(x=>x.id===detailId);
+  p.checklist.splice(i,1);
+  document.getElementById('checklistArea').innerHTML = p.checklist.map((c,i2)=>checklistRow(c,i2)).join('');
+}
+function toggleChecklistItem(i, val){
+  const p = allInstructors.find(x=>x.id===detailId);
+  p.checklist[i].checked = val;
+}
+function updateChecklistDate(i, val){
+  const p = allInstructors.find(x=>x.id===detailId);
+  p.checklist[i].date = val;
+}
+
+function addAttachmentRow(){
+  const p = allInstructors.find(x=>x.id===detailId);
+  const input = document.getElementById('newAttachLabel');
+  const val = input.value.trim();
+  if(!val) return;
+  p.attachments = p.attachments || [];
+  p.attachments.push({ label: val, image: null, note: '' });
+  input.value = '';
+  document.getElementById('attachmentList').innerHTML = p.attachments.map((a,i)=>fileRow(a,i)).join('');
+}
+function removeAttachmentRow(i){
+  const p = allInstructors.find(x=>x.id===detailId);
+  p.attachments.splice(i,1);
+  document.getElementById('attachmentList').innerHTML = p.attachments.map((a,i2)=>fileRow(a,i2)).join('');
+}
+function updateAttachmentNote(i, val){
+  const p = allInstructors.find(x=>x.id===detailId);
+  p.attachments[i].note = val;
+}
+async function handleFileSelect(i, e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const p = allInstructors.find(x=>x.id===detailId);
+  const img = await compressImage(file);
+  p.attachments[i].image = img;
+  document.getElementById('attachmentList').innerHTML = p.attachments.map((a,i2)=>fileRow(a,i2)).join('');
+}
+
+function showPhoto(url){
+  document.getElementById('photoModalImg').src = url;
+  document.getElementById('photoModalBg').classList.add('show');
+}
+function closeDetail(){
+  document.getElementById('modalBg').classList.remove('show');
+  detailId = null;
+}
+
+async function deleteInstructor(id){
+  const p = allInstructors.find(x=>x.id===id);
+  if(!confirm(`"${p ? p.name : ''}" 강사 등록을 완전히 삭제하시겠습니까?\n삭제하면 되돌릴 수 없습니다.`)) return;
+  await db.collection(COL).doc(id).delete();
+  closeDetail();
+  await loadAll(); renderStats(); renderList();
+}
+
+async function startTermination(id){
+  if(!confirm('해임 처리를 시작하시겠습니까? 재직중 → 퇴사중으로 전환되고, 퇴사 체크리스트가 새로 시작됩니다.')) return;
+  const p = allInstructors.find(x=>x.id===id);
+  const snapshot = {
+    lifecycle: effectiveLifecycle(p),
+    substatus: p.substatus || '승인완료',
+    event_base_date: p.event_base_date || p.hire_date || null,
+    checklist: p.checklist || [],
+    report_method: p.report_method || '',
+    report_date_request: p.report_date_request || '',
+    report_date_complete: p.report_date_complete || '',
+  };
+  await db.collection(COL).doc(id).update({
+    lifecycle: '퇴사중',
+    substatus: '서류준비',
+    event_base_date: todayStr(),
+    checklist: LEAVE_CHECKLIST_DEFAULT.map(item => ({ item, checked: false, date: null })),
+    report_method: '', report_date_request: '', report_date_complete: '',
+    pre_termination_snapshot: snapshot,
+  });
+  await loadAll(); renderStats(); renderList();
+  closeDetail();
+}
+
+async function cancelTermination(id){
+  const p = allInstructors.find(x=>x.id===id);
+  if(!confirm('해임 처리를 철회하고 재직중 상태로 되돌리시겠습니까?\n퇴사 체크리스트 진행 내용은 사라지고, 해임 시작 전 상태로 복원됩니다.')) return;
+  const snap = p.pre_termination_snapshot;
+  const restore = snap ? {
+    lifecycle: null, // 재직중 여부는 입사일 기준으로 자동 판단되므로 비워둠
+    substatus: snap.substatus,
+    event_base_date: snap.event_base_date,
+    checklist: snap.checklist,
+    report_method: snap.report_method,
+    report_date_request: snap.report_date_request,
+    report_date_complete: snap.report_date_complete,
+  } : {
+    lifecycle: null,
+    substatus: '승인완료',
+    event_base_date: p.hire_date || todayStr(),
+    checklist: HIRE_CHECKLIST_DEFAULT.map(item => ({ item, checked: true, date: null })),
+    report_method: '', report_date_request: '', report_date_complete: '',
+  };
+  restore.leave_date = null;
+  restore.pre_termination_snapshot = firebase.firestore.FieldValue.delete();
+  await db.collection(COL).doc(id).update(restore);
+  await loadAll(); renderStats(); renderList();
+  closeDetail();
+}
+
+async function saveDetail(){
+  if(!detailId) return;
+  const p = allInstructors.find(x=>x.id===detailId);
+  if(!p) return;
+
+  const reqDate = document.getElementById('dReqDate').value;
+  const doneDate = document.getElementById('dDoneDate').value;
+  const newHireDate = document.getElementById('dHireDate').value || null;
+  let substatus = p.substatus;
+  let lifecycle = p.lifecycle;
+  if(doneDate){
+    substatus = '승인완료';
+    if(p.lifecycle === '퇴사중' || p.lifecycle === '퇴사완료') lifecycle = '퇴사완료';
+    // 채용 트랙은 승인완료 여부와 상관없이 입사일 기준으로 재직중이 자동 판단되므로 여기서 건드리지 않는다.
+  }else if(reqDate){
+    substatus = '승인요청';
+  }else{
+    substatus = '서류준비';
+  }
+  if(lifecycle !== '퇴사중' && lifecycle !== '퇴사완료'){
+    lifecycle = effectiveLifecycle({ lifecycle: p.lifecycle, hire_date: newHireDate });
+  }
+
+  const payload = {
+    name: document.getElementById('dName').value.trim(),
+    phone: document.getElementById('dPhone').value.trim(),
+    branch: document.getElementById('dBranch').value,
+    email: document.getElementById('dEmail').value.trim(),
+    ssn: document.getElementById('dSsn').value.trim(),
+    address: document.getElementById('dAddr').value.trim(),
+    hire_date: newHireDate,
+    leave_date: document.getElementById('dLeaveDate').value || (lifecycle==='퇴사완료' ? (doneDate||todayStr()) : null),
+    checklist: p.checklist || [],
+    attachments: p.attachments || [],
+    report_method: document.getElementById('dReqMethod').value,
+    report_date_request: reqDate || '',
+    report_date_complete: doneDate || '',
+    substatus, lifecycle,
+  };
+
+  try{
+    await db.collection(COL).doc(detailId).update(payload);
+    closeDetail();
+    await loadAll(); renderStats(); renderList();
+  }catch(err){
+    alert('저장 실패: ' + (err.message||err));
+  }
+}
+
+/* ---------------- 엑셀 내보내기 ---------------- */
+function exportList(){
+  const rows = filteredRows().map(p => ({
+    이름: p.name, 분원: p.branch, 상태: effectiveLifecycle(p), 진행단계: p.substatus||'',
+    입사일: p.hire_date||'', 퇴사일: p.leave_date||'',
+    연락처: p.phone||'', 이메일: p.email||'',
+    신고방식: p.report_method||'', 승인요청일: p.report_date_request||'', 승인완료일: p.report_date_complete||'',
+  }));
+  if(!rows.length){ alert('내보낼 데이터가 없습니다.'); return; }
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '강사현황');
+  XLSX.writeFile(wb, `강사채용해임현황_${todayStr()}.xlsx`);
+}
+</script>
+</body>
+</html>

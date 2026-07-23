@@ -1,0 +1,2046 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>바론 셔틀 운영 대시보드</title>
+
+<!-- 홈 화면 아이콘 / PWA 설정 -->
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAAAER0lEQVR4nO3ay60TaRSF0QLR0SAxIZOOpkPoaMiECRLRMIAJlqyra7se/3uvlYA9ON+uuo9tAwAAAABY2ofeX+CIz1++/u79Hdjn54/vU9zWsF/Ssa9nxCiG+kKOPscoMQzxJRx+rt4hdP1wh89NrxC6fKjD55HWITT9MIfPXq1C+NjiQ7bN8XNMq3upXpnD56qaT4OqTwDHTwk176haAI6fkmrdU5UAHD811Lir4gE4fmoqfV9FA3D8tFDyzooF4PhpqdS9FQnA8dNDibu7HIDjp6er93cpAMfPCK7cYbN/hYARnQ7A+jOSs/d4KgDHz4jO3KVXIKIdDsD6M7Kj9+kJQLRDAVh/ZnDkTj0BiLY7AOvPTPbeqycA0XYFYP2Z0Z67/dTii1DWt/9+df38f///p+vnl+QViGgvA/D6Mxbrf8yr+/UEIJoAJmL9yxMA0QQwCetfx9MA/ADMCp7dsSfABKx/PQIgmgAGZ/3rEgDRBDAw61+fAIgmgEFZ/zYEQDQBDMj6tyMAoglgMNa/LQEQTQADsf7tCYBoAhiE9e9DAEQTwACsfz8CIJoAOrP+fQmAaALoyPr3JwCiCaAT6z8GARBNAB1Y/3EIgGgCaMz6j0UARBNAQ9Z/PAIgmgAasf5jEgDRBEA0ATTg9WdcAiCaACqz/mMTANEEUJH1H58AiCaASqz/HARANAFUYP3nIQCiCaAw6z8XARBNAAVZ//kIgGgCKMT6z0kARBNAAdZ/XgIgmgAusv5zEwDRBHCB9Z+fAIgmgJOs/xoEQDQBnGD91yEAogngIOu/FgEQTQAHWP/1CIBoAtjJ+q9JAEQTwA7Wf10CIJoAXrD+axMA0QTwhPVfnwCIJoAHrH8GARBNAEQTwDu8/uQQANEE8Ib1zyIAogngjvXPIwCiCeAv659JAEQTwGb9kwmAaPEBWP9s8QGQLToA6090ABAbgPVn24IDgG0LDcD6cxMZANzEBWD9uRcXANyLCsD681ZUAPBWTADWn/fEBADviQjA+vNIRADwyPIBWH+eWT4AeGbpAKw/rywdALyybADWnz2WDQD2eBrAzx/fP7T6IiVZf+49u2NPAKItF4D154jlAoAjlgrA+nPUywBm/UEYtu31/X5q9UVasMActdQrEBy1KwCvQcxoz916AhBtdwCeAsxk7716AhDtUACeAszgyJ16AhDtcACeAozs6H16AhDtVACeAozozF2efgKIgJGcvUevQES7FICnACO4coeXnwAioKer91fkFUgE9FDi7or9DCACWip1b0V/CBYBLZS8s+K/BRIBNZW+ryq/BhUBNdS4q2p/BxABJdW6p6p/CBMBJdS8o2YH+vnL19+tPos1tBjQZv8K4WnAEa3upctRehrwSOuh7LrKQuCm1xvCEK8lQsjV+9V4iABuhJCj9+HfDPEl3iOG9Yxy9PeG+0LPiGIeIx47AAAAAKn+AAyYf0rPIYxsAAAAAElFTkSuQmCC">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAYAAAA9zQYyAAAD4ElEQVR4nO3Zy20UURRF0QZBNEhMnAnREALRkAkTJKJhABMsNQi76/N+de5aCVRJvX187b7dAAAAAIDFvJn9Ao98+Pj0a/Y78Lcf378t281yLybg61kp8CVeRMQ5Zsc97eEizjcj7uEPFHI9I8N+O+pBt5uYqxr5uQ/5yREyz3qvdfeFFjP3evfQ7adFyDzSY627LLSY2aJHJ82DFjN7tO6ladBi5oiW3TQLWsyc0aqfJkGLmRZadHQ6aDHT0tmeTgUtZno409XQr76ht8NBW2d6OtrXoaDFzAhHOnNyEGV30NaZkfb2titoMTPDnu6cHETZHLR1Zqat/VloogiaKJuCdm6wgi0dvhvxIuz39fPPKc/99OX9lOe24uQgysOgnRvjWeeXPerRQhNF0IuxzucImiivBu1+Hss6b/NalxaaKIJehHVuQ9BEEfQCrHM7giaKoCezzm0JmiiCnsg6tydoogh6Euvch6CJIugJrHM/giaKoAezzn0JmiiCHsg69ydoogh6EOs8hqCJIugBrPM4giaKoDuzzmMJmiiC7sg6jydoogi6E+s8h6CJIugOrPM8giaKoBuzznMJmiiCJoqgG3JuzCdoogi6Eeu8BkETRdANWOd1CJoogj7JOq9F0EQR9AnWeT2CJoqgD7LOaxI0UQR9gHVel6CJIuidrPPaBE0UQe9gndcnaKIIeiPrfA2CJoqgN7DO1yFoogj6Aet8LYImiqBfYZ2vR9BEEfQLrPM1CZoogv4P63xdgiaKoP9hna9N0EQR9B3rfH2CJoqg/7DOGQRNFEETRdA350YSQROlfNDWOUv5oMlSOmjrnKd00OQpG7R1zlQ2aDKVDNo65yoZNLnKBW2ds5ULmmylgrbO+UoFTb4yQVvnGsoETQ0lgrbOdZQImjrig7bOtcQHTS3RQVvneqKDpp7YoK1zTbFBU1Nk0Na5rsigqSsuaOtcW1zQ1BYVtHUmKmiICdo6c7s9CPrH929vRr0IbPValxELbZ15FhE0PLt80NaZew+Ddkezkkc9vhv1Ir1YSu5d/uSAe5uCdnawgi0dWmiiCJoom4N2djDT1v4sNFF2BW2lmWFPd7sXWtSMtLc3JwdRDgVtpRnhSGeHF1rU9HS0LycHUU4FbaXp4UxXpxda1LR0tqcmJ4eoaaFFR81uaFFzRqt+mv5RKGqOaNlN8/9yiJo9WvfS5d92omaLHp10D+/Dx6dfvZ/BtfQcvO5frFhr7vXuYWhs1rquUcM29Ktva13TyM99WmDWOt+MAVtiMcWdY/Zv4SWCvifu65kd8b1lXuQlAl/PSgEDAAAAZPoNFv9jNDPVS60AAAAASUVORK5CYII=">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%EB%B0%94%EB%A1%A0%20%EC%85%94%ED%8B%80%20%EC%9A%B4%EC%98%81%20%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C%22%2C%22short_name%22%3A%22%EB%B0%94%EB%A1%A0%EC%85%94%ED%8B%80%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%232B2E33%22%2C%22theme_color%22%3A%22%2324467D%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage/png%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAAAER0lEQVR4nO3ay60TaRSF0QLR0SAxIZOOpkPoaMiECRLRMIAJlqyra7se/3uvlYA9ON%2Buuo9tAwAAAABY2ofeX%2BCIz1%2B%2B/u79Hdjn54/vU9zWsF/Ssa9nxCiG%2BkKOPscoMQzxJRx%2Brt4hdP1wh89NrxC6fKjD55HWITT9MIfPXq1C%2BNjiQ7bN8XNMq3upXpnD56qaT4OqTwDHTwk176haAI6fkmrdU5UAHD811Lir4gE4fmoqfV9FA3D8tFDyzooF4PhpqdS9FQnA8dNDibu7HIDjp6er93cpAMfPCK7cYbN/hYARnQ7A%2BjOSs/d4KgDHz4jO3KVXIKIdDsD6M7Kj9%2BkJQLRDAVh/ZnDkTj0BiLY7AOvPTPbeqycA0XYFYP2Z0Z67/dTii1DWt/9%2Bdf38f///p%2Bvnl%2BQViGgvA/D6Mxbrf8yr%2B/UEIJoAJmL9yxMA0QQwCetfx9MA/ADMCp7dsSfABKx/PQIgmgAGZ/3rEgDRBDAw61%2BfAIgmgEFZ/zYEQDQBDMj6tyMAoglgMNa/LQEQTQADsf7tCYBoAhiE9e9DAEQTwACsfz8CIJoAOrP%2BfQmAaALoyPr3JwCiCaAT6z8GARBNAB1Y/3EIgGgCaMz6j0UARBNAQ9Z/PAIgmgAasf5jEgDRBEA0ATTg9WdcAiCaACqz/mMTANEEUJH1H58AiCaASqz/HARANAFUYP3nIQCiCaAw6z8XARBNAAVZ//kIgGgCKMT6z0kARBNAAdZ/XgIgmgAusv5zEwDRBHCB9Z%2BfAIgmgJOs/xoEQDQBnGD91yEAogngIOu/FgEQTQAHWP/1CIBoAtjJ%2Bq9JAEQTwA7Wf10CIJoAXrD%2BaxMA0QTwhPVfnwCIJoAHrH8GARBNAEQTwDu8/uQQANEE8Ib1zyIAogngjvXPIwCiCeAv659JAEQTwGb9kwmAaPEBWP9s8QGQLToA6090ABAbgPVn24IDgG0LDcD6cxMZANzEBWD9uRcXANyLCsD681ZUAPBWTADWn/fEBADviQjA%2BvNIRADwyPIBWH%2BeWT4AeGbpAKw/rywdALyybADWnz2WDQD2eBrAzx/fP7T6IiVZf%2B49u2NPAKItF4D154jlAoAjlgrA%2BnPUywBm/UEYtu31/X5q9UVasMActdQrEBy1KwCvQcxoz916AhBtdwCeAsxk7716AhDtUACeAszgyJ16AhDtcACeAozs6H16AhDtVACeAozozF2efgKIgJGcvUevQES7FICnACO4coeXnwAioKer91fkFUgE9FDi7or9DCACWip1b0V/CBYBLZS8s%2BK/BRIBNZW%2Bryq/BhUBNdS4q2p/BxABJdW6p6p/CBMBJdS8o2YH%2BvnL19%2BtPos1tBjQZv8K4WnAEa3upctRehrwSOuh7LrKQuCm1xvCEK8lQsjV%2B9V4iABuhJCj9%2BHfDPEl3iOG9Yxy9PeG%2B0LPiGIeIx47AAAAAKn%2BAAyYf0rPIYxsAAAAAElFTkSuQmCC%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image/png%22%7D%2C%7B%22src%22%3A%22data%3Aimage/png%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD0eNT6AAAPgElEQVR4nO3czZFlRxWF0RQB1ihCE3mCNZiANXiiiSKwhoEYiKa7q%2BtVvZ9zM/PkXssAaO7tqPPtW0JjAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwJl%2BWv0HYI6ff/n1j9V/BqCPf//%2Bm/twOC/4EA48MJNA6M8LbMixB3YkCnrxshpw8IGOBMHevJwNOfjAiQTBXryMTTj6QBIxsJ4XsJCjDyAGVvHQJ3P0AW4TA/N40JM4/AD3EwLX84Av5OgDvE4MXMNDvYDDD1BPCNTyMAs5/ADXEwI1PMQCDj/AfELgNR7eCxx%2BgPWEwHM8tCc4/AD7EQKP%2BcvqP0A3jj/Anvx8foxaupO/WAB9%2BBrwOQ/oEw4/QF9C4Da/AviA4w/Qm5/jtymjd/gLA3AeXwO%2B5wvAG44/wJn8fP%2BeAPiGvxwAZ/Nz/iufQ4a/EACJ0n8lEP8FwPEHyJT%2B8z86ANJfPkC65DsQ%2Bfkj%2BYUD8L60XwnEfQFw/AF4T9p9iAqAtJcLwGOS7kRMACS9VACel3IvIgIg5WUCUCPhbhwfAAkvEYB6p9%2BPowPg9JcHwLVOviPHBsDJLw2AeU69J0cGwKkvC4A1TrwrxwXAiS8JgPVOuy9HBcBpLweAvZx0Z44JgJNeCgD7OuXeHBEAp7wMAHo44e60D4ATXgIA/XS/P60DoPvDB6C3zneobQB0fugAnKPrPWoZAF0fNgBn6niXWgYAAPCadgHQsbIAOF%2B3%2B9QqALo9XACydLpTbQKg00MFIFeXe9UmAACAOi0CoEtNAcAYPe7W9gHQ4SECwFu736%2BtA2D3hwcAH9n5jm0dAADANbYNgJ2rCQDutes92zIAdn1YAPCMHe/algEAAFxruwDYsZIA4FW73bftAgAAuN5WAbBbHQFApZ3u3DYBsNNDAYCr7HLvtgkAAGCeLQJglxoCgBl2uHtbBAAAMNfyANihggBgttX3b3kAAADzLQ2A1fUDACutvIO%2BAABAoGUBYP0DwLp76AsAAARaEgDWPwB8teIu%2BgIAAIEEAAAEmh4APv8DwI9m30dfAAAg0NQAsP4B4LaZd9IXAAAIJAAAINC0APD5HwA%2BN%2Bte%2BgIAAIH%2BuvoPADDGGP/6x39W/xGO8fd//m31H4EGpnwB8PkfAO434276FQCwnPVfx/rnXgIAAAJdHgA%2B/wMfsf7rWP9nufp%2B%2BgIAAIEEALCM9V/H%2BudRAgAAAl0aAH7/D9xi/dex/s915R31BQAAAgkAYDrrv471z7MEAAAEuiwA/P4feI/1X8f6z3DVPfUFAAACCQBgGuu/jvXPqwQAAAQSAMAU1n8d658KlwSAfwAQAOpccVd9AQAuZ/3Xsf6pIgAAIJAAAC5l/dex/qkkAAAgkAAALmP917H%2BqSYAACCQAAAuYf3Xsf65QnkA%2BHcAAEC96vvqCwBQzvqvY/1zFQEAAIEEAFDK%2Bq9j/XMlAQAAgQQAAAQSAEAZn//r%2BPzP1QQAAAQSAEAJ67%2BO9c8MAgAAAgkA4GXWfx3rn1kEAAAEEgDAS6z/OtY/MwkAAAgkAICnWf91rH9mEwAAEEgAAE%2Bx/utY/6wgAAAgkAAAHmb917H%2BWUUAAEAgAQA8xPqvY/2zkgAAgEACALib9V/H%2Bmc1AQAAgQQAcBfrv471zw4EAAAEEgDAp6z/OtY/uxAAABBIAAAfsv7rWP/sRAAAQCABANxk/dex/tmNAACAQAIAeJf1X8f6Z0cCAAACCQAACCQAgB/4/F/H5392JQAAIJAAAL5j/dex/tmZAACAQAIA%2BD/rv471z%2B4EAAAEEgDAGMP6r2T904EAAIBAAgCw/gtZ/3QhAAAgkACAcNZ/HeufTgQAAAQSABDM%2Bq9j/dONAACAQAIAQln/dax/OhIAABBIAEAg67%2BO9U9XAgAAAgkACGP917H%2B6UwAAEAgAQBBrP861j/dCQAACCQAIIT1X8f65wQCAAACCQAIYP3Xsf45hQAAgEACAA5n/dex/jmJAACAQAIAAAIJADiYz/91fP7nNAIAAAIJADiU9V/H%2BudEAgAAAgkAOJD1X8f651QCAAACCQA4jPVfx/rnZAIAAAIJADiI9V/H%2Bud0AgAAAgkAOIT1X8f6J4EAAIBAAgAOYP3Xsf5JIQAAIJAAgOas/zrWP0kEAAAEEgDQmPVfx/onjQAAgEACAJqy/utY/yQSAAAQSABAQ9Z/HeufVAIAAAIJAGjG%2Bq9j/ZNMAABAIAEAjVj/dax/0gkAAAgkAKAJ67%2BO9Q8CAAAiCQAACCQAoAGf/%2Bv4/A9/EgAAEEgAwOas/zrWP3wlAAAgkACAjVn/dax/%2BJ4AAIBAAgA2Zf3Xsf7hRwIAAAIJANiQ9V/H%2Bof3CQAACCQAYDPWfx3rH24TAAAQSADARqz/OtY/fEwAAEAgAQCbsP7rWP/wOQEAAIEEAGzA%2Bq9j/cN9BAAABBIAsJj1X8f6h/sJAAAIJABgIeu/jvUPjxEAABBIAMAi1n8d6x8eJwAAIJAAgAWs/zrWPzxHAABAIAEAk1n/dax/eJ4AAIBAAgAAAgkAmMjn/zo%2B/8NrBAAABBIAMIn1X8f6h9cJAAAIJABgAuu/jvUPNQQAAAQSAHAx67%2BO9Q91BAAABBIAcCHrv471D7UEAAAEEgBwEeu/jvUP9QQAAAQSAHAB67%2BO9Q/XEAAAEEgAQDHrv471D9cRAAAQSABAIeu/jvUP1xIAABBIAEAR67%2BO9Q/XEwAAEEgAQAHrv471D3MIAAAIJADgRdZ/Hesf5hEAABBIAMALrP861j/MJQAAIJAAAIBAAgCe5PN/HZ//YT4BAACBBAA8wfqvY/3DGgIAAAIJAHiQ9V/H%2Bod1BAAABBIA8ADrv471D2sJAAAIJADgTtZ/Hesf1hMAABBIAMAdrP861j/sQQAAQCABAJ%2Bw/utY/7APAQAAgQQAfMD6r2P9w14EAAAEEgBwg/Vfx/qH/QgAAAgkAOAd1n8d6x/2JAAAIJAAgDes/zrWP%2BxLAABAIAEA37D%2B61j/sDcBAACBBAD8j/Vfx/qH/QkAAAgkAGBY/5Wsf%2BhBAABAIAEAAIEEAPF8/q/j8z/0IQAAIJAAIJr1X8f6h14EAAAEEgDEsv7rWP/QjwAAgEACgEjWfx3rH3oSAAAQSAAQx/qvY/1DXwIAAAIJAKJY/3Wsf%2BhNAABAIAFADOu/jvUP/QkAAAgkAIhg/dex/uEMAgAAAgkAjmf917H%2B4RwCAAACCQCOZv3Xsf7hLAIAAAIJAI5l/dex/uE8AgAAAgkAjmT917H%2B4UwCAAACCQCOY/3Xsf7hXAIAAAIJAI5i/dex/uFsAgAAAgkAAAgkADiGz/91fP6H8wkAAAgkADiC9V/H%2BocMAgAAAgkA2rP%2B61j/kEMAAEAgAUBr1n8d6x%2ByCAAACCQAaMv6r2P9Qx4BAACBBAAtWf91rH/IJAAAIJAAoB3rv471D7kEAAAEEgC0Yv3Xsf4hmwAAgEACgDas/zrWPyAAACCQAKAF67%2BO9Q%2BMIQAAIJIAYHvWfx3rH/hCAABAIAHA1qz/OtY/8C0BAACBBADbsv7rWP/AWwIAAAIJALZk/dex/oH3CAAACCQAACCQAGA7Pv/X8fkfuEUAAEAgAcBWrP861j/wEQEAAIEEANuw/utY/8BnBAAABBIAbMH6r2P9A/cQAAAQSACwnPVfx/oH7iUAACCQAGAp67%2BO9Q88QgAAQCABwDLWfx3rH3iUAACAQAKAJaz/OtY/8AwBAACBBADTWf91rH/gWQIAAAIJAKay/utY/8ArBAAABBIATGP917H%2BgVcJAAAIJACYwvqvY/0DFQQAAAQSAFzO%2Bq9j/QNVBAAABBIAXMr6r2P9A5UEAAAEEgAAEEgAcBmf/%2Bv4/A9UEwAAEEgAcAnrv471D1xBAABAoPIA%2BPfvv/1U/Z9JL9Z/Hesf%2BKL6vvoCAACBBAClrP861j9wJQEAAIEEAGWs/zrWP3A1AQAAgQQAJaz/OtY/MIMAAIBAlwSAfxdAFuu/jvUPvOeKu%2BoLAAAEEgC8xPqvY/0DMwkAAAgkAHia9V/H%2BgdmuywA/IOAAPC6q%2B6pLwA8xfqvY/0DKwgAAAgkAHiY9V/H%2BgdWuTQA/HMAAPC8K%2B%2BoLwA8xPqvY/0DKwkAAAgkALib9V/H%2BgdWuzwA/HMAAPC4q%2B%2BnLwDcxfqvY/0DOxAAABBo2uf5n3/59Y9Z/10A0NmMX5/7AgAAgQQAAASaFgD%2B3wAA8LlZ99IXAAAIJAAAINDUAPBrAAC4bead9AUAAAJNDwBfAQDgR7Pvoy8AABBIAABAoCUB4NcAAPDVirvoCwAABFoWAL4CAMC6e%2BgLAAAEWhoAvgIAkGzlHfQFAAACLQ8AXwEASLT6/i0PAABgvi0CYHUFAcBMO9y9LQIAAJhrmwDYoYYA4Gq73LttAmCMfR4KAFxhpzu3VQAAAHNsFwA71REAVNntvm0XAADA9bYMgN0qCQBeseNd2zIAxtjzYQHAo3a9Z9sGAABwna0DYNdqAoB77HzHtg6AMfZ%2BeABwy%2B73a/sAGGP/hwgA3%2Bpwt1oEAABQq00AdKgpAOhyr9oEwBh9HioAmTrdqVYBMEavhwtAjm73qV0AAACvaxkA3SoLgLN1vEstA2CMng8bgPN0vUdtA2CMvg8dgDN0vkOtA2CM3g8fgL6635/2ATBG/5cAQC8n3J0jAmCMM14GAPs75d4cEwBjnPNSANjTSXfmqAAY46yXA8A%2BTrsvxwXAGOe9JADWOvGuHBkAY5z5sgCY79R7cmwAjHHuSwNgjpPvyNEBMMbZLw%2BA65x%2BP44PgDHOf4kA1Eq4GxEBMEbGywTgdSn3IiYAxsh5qQA8J%2BlORAXAGFkvF4D7pd2HqP%2Bxb/38y69/rP4zALBW2uH/Iu4LwLdSXzoAf0q%2BA9EBMEb2ywdIlv7zP/p//Ft%2BJQBwvvTD/0X8F4Bv%2BUsBcDY/578SAG/4ywFwJj/fv%2BdhfMCvBAD6c/jf5wvAB/ylAejNz/HbPJg7%2BRoA0IfD/zkP6EFCAGBfDv/9/ArgQf5yAezJz%2BfHeFgv8DUAYD2H/zkeWgEhADCfw/8aD6%2BQEAC4nsNfw0O8gBAAqOfw1/IwLyQEAF7n8F/DQ51EDADcz9G/ngc8mRAAuM3hn8eDXkgMADj6q3jomxADQBJHfz0vYENiADiRo78XL6MBQQB05ODvzctpSBAAO3Lwe/GyDiEKgJkc%2B/68wBACAXiEAw8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHOK/0Y/k0FCntdgAAAAASUVORK5CYII%3D%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image/png%22%7D%5D%7D">
+<meta name="theme-color" content="#24467D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="바론셔틀">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+  :root{
+    --navy:#24467D;
+    --logobg:#2B2E33;
+    --slate:#2E5395;
+    --busyellow:#FFC72C;
+    --busyellow-dark:#E6A800;
+    --gold:#BF8F00;
+    --red:#C0392B;
+    --green:#2F9E44;
+    --bg:#F3F4F7;
+    --card:#FFFFFF;
+    --border:#E1E4EA;
+    --text:#1B1F27;
+    --muted:#6B7280;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Pretendard","Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    background:var(--navy);
+    color:#fff;
+    padding:18px 28px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-badge{
+    width:40px;height:40px;border-radius:10px;
+    background:var(--logobg);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .brand-badge svg{width:20px;height:27px;}
+  .brand h1{font-size:17px;margin:0;font-weight:800;letter-spacing:-0.3px;}
+  .brand p{margin:0;font-size:12px;color:#B9C4DC;}
+
+  .upload-wrap{display:flex;align-items:center;gap:10px;}
+  .upload-btn{
+    background:var(--busyellow);
+    color:var(--navy);
+    border:none;
+    font-weight:700;
+    font-size:13px;
+    padding:10px 16px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:transform .15s ease, background .15s ease;
+  }
+  .upload-btn:hover{background:var(--busyellow-dark);}
+  .upload-btn:focus-visible{outline:3px solid #fff;outline-offset:2px;}
+  .file-status{font-size:12px;color:#CBD5EA;}
+  #fileInput{display:none;}
+
+  /* ---------- Tabs ---------- */
+  .tabs{
+    display:flex;
+    gap:6px;
+    padding:14px 28px 0;
+    background:var(--bg);
+    border-bottom:1px solid var(--border);
+    flex-wrap:wrap;
+  }
+  .tab-btn{
+    border:none;
+    background:transparent;
+    padding:12px 18px;
+    font-size:14px;
+    font-weight:700;
+    color:var(--muted);
+    cursor:pointer;
+    border-bottom:3px solid transparent;
+    border-radius:8px 8px 0 0;
+  }
+  .tab-btn.active{color:var(--navy);border-bottom-color:var(--busyellow);background:var(--card);}
+  .tab-btn:focus-visible{outline:2px solid var(--slate);outline-offset:2px;}
+
+  main{padding:24px 28px 60px;max-width:1200px;margin:0 auto;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .empty{
+    text-align:center;
+    padding:80px 20px;
+    color:var(--muted);
+  }
+  .empty .icon{font-size:40px;margin-bottom:10px;}
+  .empty b{color:var(--navy);}
+
+  /* ---------- Stat cards ---------- */
+  .stat-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:20px;}
+  .stat-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px 20px;
+    flex:1;
+    min-width:140px;
+  }
+  .stat-card .num{font-size:26px;font-weight:800;color:var(--navy);}
+  .stat-card.warn .num{color:var(--gold);}
+  .stat-card.danger .num{color:var(--red);}
+  .stat-card .label{font-size:12px;color:var(--muted);margin-top:2px;}
+
+  /* ---------- Filters ---------- */
+  .filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;align-items:center;}
+  .chip{
+    border:1px solid var(--border);
+    background:var(--card);
+    padding:7px 14px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:600;
+    color:var(--muted);
+    cursor:pointer;
+  }
+  .chip.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .search-input{
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:8px 16px;
+    font-size:13px;
+    min-width:200px;
+    font-family:inherit;
+  }
+  .search-input:focus-visible{outline:2px solid var(--slate);}
+
+  /* ---------- 호차 badge (signature element) ---------- */
+  .hocha-badge{
+    display:inline-flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    background:var(--busyellow);
+    color:var(--navy);
+    border-radius:10px;
+    padding:6px 10px;
+    min-width:64px;
+    box-shadow:inset 0 0 0 2px rgba(31,56,100,.25);
+  }
+  .hocha-badge .num{font-size:16px;font-weight:800;line-height:1.1;}
+  .hocha-badge .branch{font-size:9px;font-weight:700;letter-spacing:.5px;}
+  .hocha-badge.retired{background:#DADFE6;color:#7A8291;}
+
+  /* ---------- 호차 cards ---------- */
+  .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;}
+  .hocha-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .hocha-card .head{display:flex;align-items:center;gap:10px;}
+  .hocha-card .head .meta{font-size:12px;color:var(--muted);}
+  .hocha-card dl{margin:0;font-size:13px;display:grid;grid-template-columns:56px 1fr;row-gap:6px;}
+  .hocha-card dt{color:var(--muted);}
+  .hocha-card dd{margin:0;font-weight:600;}
+  .issue-flag{
+    background:#FDEDEC;color:var(--red);font-size:11px;font-weight:700;
+    padding:4px 8px;border-radius:6px;display:inline-block;
+  }
+
+  /* ---------- Table ---------- */
+  table{width:100%;border-collapse:collapse;background:var(--card);border-radius:var(--radius);overflow:hidden;}
+  thead th{
+    background:var(--navy);color:#fff;font-size:12px;text-align:left;
+    padding:11px 14px;font-weight:700;
+  }
+  tbody td{padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#F8FAFD;}
+
+  .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;}
+  .badge.green{background:#E7F6EC;color:var(--green);}
+  .badge.gold{background:#FFF3D6;color:var(--gold);}
+  .badge.red{background:#FDEDEC;color:var(--red);}
+  .badge.gray{background:#EEF0F3;color:var(--muted);}
+  .badge.top{background:var(--navy);color:#fff;}
+
+  .dday{font-weight:800;font-size:13px;}
+  .dday.green{color:var(--green);}
+  .dday.gold{color:var(--gold);}
+  .dday.red{color:var(--red);}
+
+  .section-title{font-size:14px;font-weight:800;color:var(--navy);margin:26px 0 10px;display:flex;align-items:center;gap:8px;}
+  .section-title .star{color:var(--busyellow-dark);}
+
+  .export-btn{
+    background:var(--card);
+    border:1px solid var(--slate);
+    color:var(--slate);
+    font-weight:700;
+    font-size:12.5px;
+    padding:8px 14px;
+    border-radius:999px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .export-btn:hover{background:var(--slate);color:#fff;}
+  .export-btn:focus-visible{outline:2px solid var(--slate);outline-offset:2px;}
+  .export-btn.small{font-size:11.5px;padding:5px 10px;}
+
+  footer{text-align:center;font-size:11px;color:var(--muted);padding:20px;}
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(20,24,32,.55);
+    align-items:center;justify-content:center;z-index:100;padding:20px;
+  }
+  .modal-overlay.active{display:flex;}
+  .modal-card{
+    background:#fff;border-radius:16px;padding:24px;max-width:420px;width:100%;
+    box-shadow:0 20px 50px rgba(0,0,0,.25);
+  }
+  .modal-card h3{margin:0 0 8px;color:var(--navy);font-size:17px;}
+  .modal-desc{font-size:13px;color:var(--muted);margin:0 0 16px;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+  .toggle-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 4px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;
+  }
+  .toggle-row:last-child{border-bottom:none;}
+  .switch{position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;}
+  .switch input{opacity:0;width:0;height:0;}
+  .switch .slider{position:absolute;cursor:pointer;inset:0;background:#D5D9E0;border-radius:999px;transition:.2s;}
+  .switch .slider:before{content:"";position:absolute;height:16px;width:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+  .switch input:checked + .slider{background:var(--navy);}
+  .switch input:checked + .slider:before{transform:translateX(18px);}
+
+  @media (max-width:640px){
+    .topbar,.tabs,main{padding-left:16px;padding-right:16px;}
+    thead{display:none;}
+    table, tbody, tr, td{display:block;width:100%;}
+    tbody tr{border:1px solid var(--border);border-radius:10px;margin-bottom:10px;padding:8px;}
+    tbody td{border-bottom:none;padding:6px 8px;}
+    tbody td::before{content:attr(data-label);display:block;font-size:10px;color:var(--muted);font-weight:700;margin-bottom:2px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="https://varon2026.github.io/varon-links/" class="brand" style="text-decoration:none;color:inherit;cursor:pointer;" title="바론링크로 돌아가기">
+    <div class="brand-badge"><svg viewBox="0 0 20 28" fill="none"><path d="M13 0H20L7 28H0L13 0Z" fill="#D9A62E"/></svg></div>
+    <div>
+      <h1>바론 셔틀 운영 대시보드</h1>
+      <p>호차현황판 · 계약관리 · 서류알림함 · ← 바론링크로 돌아가기</p>
+    </div>
+  </a>
+  <div class="upload-wrap">
+    <span class="file-status" id="fileStatus">서버에서 최신 자료를 불러오는 중...</span>
+    <button class="upload-btn" id="settingsBtn" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);">⚙ 화면 관리</button>
+    <button class="upload-btn" id="saveBtn" style="background:#fff;color:var(--navy);">☁️ 서버에 저장</button>
+    <button class="upload-btn" id="uploadBtn">엑셀 업로드</button>
+    <input type="file" id="fileInput" accept=".xlsx,.xls">
+  </div>
+</div>
+
+<div class="tabs" id="tabsBar"></div>
+
+<!-- 화면 관리(관리자) 모달 -->
+<!-- 기사/동승자 이름 클릭 시 뜨는 상세 팝업 -->
+<div class="modal-overlay" id="personOverlay">
+  <div class="modal-card" id="personModalBody" style="max-width:460px;"></div>
+</div>
+
+<div class="modal-overlay" id="settingsOverlay">
+  <div class="modal-card">
+    <div id="settingsAuthView">
+      <h3>관리자 인증</h3>
+      <p class="modal-desc">화면 노출 설정을 변경하려면 관리자 비밀번호를 입력하세요.</p>
+      <input type="password" id="adminPwInput" class="search-input" style="width:100%;margin-bottom:12px;" placeholder="비밀번호">
+      <div class="modal-actions">
+        <button class="chip" id="settingsCancelBtn">취소</button>
+        <button class="upload-btn" id="adminPwSubmit" style="background:var(--navy);color:#fff;">확인</button>
+      </div>
+    </div>
+    <div id="settingsToggleView" style="display:none;">
+      <h3>화면 노출 설정</h3>
+      <p class="modal-desc">체크 해제하면 상단 탭에서 해당 화면이 숨겨집니다 (전체 사용자 공통 적용).</p>
+      <div id="tabToggleList"></div>
+      <div class="modal-actions">
+        <button class="chip" id="settingsCloseBtn">닫기</button>
+        <button class="upload-btn" id="settingsSaveBtn" style="background:var(--navy);color:#fff;">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main>
+
+  <!-- 호차현황판 -->
+  <section class="view active" id="view-hocha">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:18px;">
+      <div style="font-size:14px;font-weight:800;color:var(--navy);margin-bottom:12px;">➕ 신규 호차 등록</div>
+      <div class="filter-row">
+        <input class="search-input" id="hochaFormNo" placeholder="호차번호 (예: 11호)">
+        <select id="hochaFormBranch" class="search-input" style="min-width:100px;"></select>
+        <input class="search-input" id="hochaFormCar" placeholder="현재차량(차량번호)">
+        <input class="search-input" id="hochaFormDriver" placeholder="현재기사(이름)">
+        <input class="search-input" id="hochaFormAttendant" placeholder="현재동승자(이름)">
+        <input class="search-input" id="hochaFormCompany" placeholder="현재업체">
+        <button class="upload-btn" id="hochaFormSubmit" style="background:var(--navy);color:#fff;">등록</button>
+      </div>
+    </div>
+
+    <div id="hocha-empty" class="empty">
+      <div class="icon">🚌</div>
+      <p>등록된 호차가 아직 없습니다. 위에서 첫 호차를 등록해보세요.</p>
+    </div>
+    <div id="hocha-content" style="display:none;">
+      <div class="filter-row" id="branch-filter"></div>
+      <div class="filter-row" style="justify-content:space-between;">
+        <input class="search-input" id="hocha-search" placeholder="호차번호 또는 기사명 검색">
+        <button class="export-btn" id="hocha-export">⬇ 현재 목록 엑셀로 내보내기</button>
+      </div>
+      <div class="card-grid" id="hocha-grid" style="margin-top:16px;"></div>
+    </div>
+  </section>
+
+  <!-- 계약관리 -->
+  <section class="view" id="view-contract">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:18px;">
+      <div style="font-size:14px;font-weight:800;color:var(--navy);margin-bottom:12px;">➕ 신규 계약 등록</div>
+      <div class="filter-row">
+        <input class="search-input" id="contractFormHocha" placeholder="호차 (예: 장안 11호)">
+        <input class="search-input" id="contractFormCompany" placeholder="업체명">
+        <label style="font-size:12px;color:var(--muted);">계약시작일 <input type="date" id="contractFormStart" style="margin-left:4px;"></label>
+        <label style="font-size:12px;color:var(--muted);">계약종료일 <input type="date" id="contractFormEnd" style="margin-left:4px;"></label>
+        <input class="search-input" id="contractFormPay" placeholder="급여 (예: 3,200,000)" style="max-width:150px;">
+      </div>
+      <div class="filter-row">
+        <input class="search-input" id="contractFormTrips" placeholder="운행횟수 (예: 1일2회)">
+        <input class="search-input" id="contractFormArea" placeholder="운행지역">
+        <input class="search-input" id="contractFormPenalty" placeholder="위약조항">
+        <input class="search-input" id="contractFormInsurance" placeholder="보험의무">
+        <input class="search-input" id="contractFormMaint" placeholder="정비의무">
+        <select id="contractFormRenewal" class="search-input" style="min-width:90px;">
+          <option value="신규">신규</option>
+          <option value="갱신">갱신</option>
+        </select>
+        <button class="upload-btn" id="contractFormSubmit" style="background:var(--navy);color:#fff;">등록</button>
+      </div>
+    </div>
+
+    <div id="contract-empty" class="empty">
+      <div class="icon">📄</div>
+      <p>등록된 계약이 아직 없습니다. 위에서 첫 계약을 등록해보세요.</p>
+    </div>
+    <div id="contract-content" style="display:none;">
+      <div class="stat-row" id="contract-stats"></div>
+      <div class="filter-row" id="contract-branch-filter"></div>
+      <div class="filter-row" style="justify-content:flex-end;">
+        <button class="export-btn" id="contract-export">⬇ 현재 목록 엑셀로 내보내기</button>
+      </div>
+      <table>
+        <thead><tr>
+          <th>호차</th><th>업체</th><th>계약기간</th><th>남은 기간</th><th>급여</th><th>구분</th>
+        </tr></thead>
+        <tbody id="contract-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 서류알림함 -->
+  <section class="view" id="view-doc">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:18px;">
+      <div style="font-size:14px;font-weight:800;color:var(--navy);margin-bottom:12px;">➕ 신규 서류 등록</div>
+      <div class="filter-row">
+        <select id="docFormType" class="search-input" style="min-width:150px;"></select>
+        <select id="docFormTargetType" class="search-input" style="min-width:90px;">
+          <option value="기사">기사</option>
+          <option value="동승자">동승자</option>
+          <option value="차량">차량</option>
+          <option value="업체">업체</option>
+          <option value="호차">호차</option>
+        </select>
+        <input class="search-input" id="docFormTarget" placeholder="대상 (예: 홍길동, 71가1234)">
+      </div>
+      <div class="filter-row">
+        <label style="font-size:12px;color:var(--muted);">발급/재조회일 <input type="date" id="docFormIssued" style="margin-left:4px;"></label>
+        <label style="font-size:12px;color:var(--muted);">만료일(해당시) <input type="date" id="docFormExpires" style="margin-left:4px;"></label>
+        <select id="docFormStatus" class="search-input" style="min-width:90px;">
+          <option value="유효">유효</option>
+          <option value="만료임박">만료임박</option>
+          <option value="만료">만료</option>
+          <option value="재발급필요">재발급필요</option>
+        </select>
+        <input class="search-input" id="docFormReissueReason" placeholder="재발급사유(선택)">
+        <button class="upload-btn" id="docFormSubmit" style="background:var(--navy);color:#fff;">등록</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">※ 관리등급(⭐최상/상/하)은 서류종류에 따라 자동으로 매겨집니다. 만료 개념이 없는 서류(범죄경력조회·통학버스신고필증)는 만료일을 비워두세요.</div>
+    </div>
+
+    <div id="doc-empty" class="empty">
+      <div class="icon">📁</div>
+      <p>등록된 서류가 아직 없습니다. 위에서 첫 서류를 등록해보세요.</p>
+    </div>
+    <div id="doc-content" style="display:none;">
+      <div class="filter-row" id="doc-branch-filter"></div>
+      <div class="stat-row" id="doc-stats"></div>
+      <div class="filter-row" style="justify-content:flex-end;">
+        <button class="export-btn" id="doc-all-export">⬇ 전체 서류 엑셀로 내보내기</button>
+      </div>
+
+      <div class="section-title" style="justify-content:space-between;">
+        <span><span class="star">⭐</span> 최상 등급 서류 (범죄경력조회 · 안전교육확인증 · 통학버스신고필증)</span>
+        <button class="export-btn small" id="doc-top-export">⬇ 최상 등급만 내보내기</button>
+      </div>
+      <table><thead><tr>
+        <th>서류종류</th><th>대상</th><th>발급/재조회일</th><th>만료일</th><th>남은 기간</th><th>상태</th>
+      </tr></thead><tbody id="doc-top-body"></tbody></table>
+
+      <div class="section-title" style="justify-content:space-between;">
+        <span>일반 서류</span>
+        <button class="export-btn small" id="doc-normal-export">⬇ 일반 서류만 내보내기</button>
+      </div>
+      <table><thead><tr>
+        <th>서류종류</th><th>대상</th><th>발급일</th><th>만료일</th><th>남은 기간</th><th>상태</th>
+      </tr></thead><tbody id="doc-normal-body"></tbody></table>
+    </div>
+  </section>
+
+  <!-- 기사·동승자현황 -->
+  <section class="view" id="view-staff">
+    <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:18px;">
+      <div style="font-size:14px;font-weight:800;color:var(--navy);margin-bottom:12px;">➕ 신규 기사·동승자 등록</div>
+      <div class="filter-row">
+        <select id="staffFormRole" class="search-input" style="min-width:100px;">
+          <option value="기사">기사</option>
+          <option value="동승자">동승자</option>
+        </select>
+        <input class="search-input" id="staffFormName" placeholder="이름">
+        <input class="search-input" id="staffFormPhone" placeholder="연락처">
+        <input class="search-input" id="staffFormCompany" placeholder="소속업체">
+        <input class="search-input" id="staffFormHocha" placeholder="배정호차 (예: 장안 11호)">
+      </div>
+      <div class="filter-row">
+        <label style="font-size:12px;color:var(--muted);">채용일 <input type="date" id="staffFormHireDate" style="margin-left:4px;"></label>
+        <label style="font-size:12px;color:var(--muted);">범죄조회일 <input type="date" id="staffFormCrimeCheck" style="margin-left:4px;"></label>
+        <label style="font-size:12px;color:var(--muted);">안전교육이수일 <input type="date" id="staffFormEduDate" style="margin-left:4px;"></label>
+        <select id="staffFormType" class="search-input" style="min-width:90px;">
+          <option value="정규">정규</option>
+          <option value="대체">대체</option>
+        </select>
+        <input class="search-input" id="staffFormPay" placeholder="급여 (예: 2,200,000)" style="max-width:150px;">
+        <button class="upload-btn" id="staffFormSubmit" style="background:var(--navy);color:#fff;">등록</button>
+      </div>
+    </div>
+
+    <div id="staff-empty" class="empty">
+      <div class="icon">🧑‍✈️</div>
+      <p>등록된 기사·동승자가 아직 없습니다. 위에서 첫 인원을 등록해보세요.</p>
+    </div>
+    <div id="staff-content" style="display:none;">
+      <div class="stat-row" id="staff-stats"></div>
+      <div class="filter-row" id="staff-branch-filter"></div>
+      <div class="filter-row">
+        <button class="chip active" data-role="전체">전체</button>
+        <button class="chip" data-role="기사">기사</button>
+        <button class="chip" data-role="동승자">동승자</button>
+        <label style="font-size:13px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:6px;margin-left:6px;">
+          <input type="checkbox" id="staff-active-only" checked> 재직중만 보기
+        </label>
+      </div>
+      <div class="filter-row" style="justify-content:space-between;">
+        <input class="search-input" id="staff-search" placeholder="이름 검색">
+        <button class="export-btn" id="staff-export">⬇ 현재 목록 엑셀로 내보내기</button>
+      </div>
+      <table><thead><tr>
+        <th>이름</th><th>역할</th><th>연락처</th><th>소속업체</th><th>배정호차/부</th>
+        <th>채용일</th><th>재직상태</th><th>범죄조회일</th><th>안전교육이수일</th><th>급여</th>
+      </tr></thead><tbody id="staff-body"></tbody></table>
+    </div>
+  </section>
+
+  <!-- 차량·업체현황 -->
+  <section class="view" id="view-vehicle">
+    <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:18px;">
+      <div style="font-size:14px;font-weight:800;color:var(--navy);margin-bottom:12px;">➕ 신규 차량 등록</div>
+      <div class="filter-row">
+        <input class="search-input" id="vehicleFormNo" placeholder="차량번호 (예: 71가1234)">
+        <input class="search-input" id="vehicleFormType" placeholder="차종 (예: 스타리아)">
+        <input class="search-input" id="vehicleFormSeats" placeholder="인승" style="max-width:80px;">
+        <input class="search-input" id="vehicleFormYear" placeholder="연식" style="max-width:80px;">
+        <select id="vehicleFormOwn" class="search-input" style="min-width:90px;">
+          <option value="전세">전세</option>
+          <option value="개인">개인</option>
+          <option value="지입">지입</option>
+        </select>
+        <input class="search-input" id="vehicleFormHocha" placeholder="배정호차">
+        <button class="upload-btn" id="vehicleFormSubmit" style="background:var(--navy);color:#fff;">등록</button>
+      </div>
+    </div>
+
+    <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:18px;">
+      <div style="font-size:14px;font-weight:800;color:var(--navy);margin-bottom:12px;">➕ 신규 업체 등록</div>
+      <div class="filter-row">
+        <input class="search-input" id="companyFormName" placeholder="업체명">
+        <input class="search-input" id="companyFormBizNo" placeholder="사업자등록번호">
+        <input class="search-input" id="companyFormCeo" placeholder="대표자">
+        <input class="search-input" id="companyFormPhone" placeholder="연락처">
+        <button class="upload-btn" id="companyFormSubmit" style="background:var(--navy);color:#fff;">등록</button>
+      </div>
+    </div>
+
+    <div id="vehicle-empty" class="empty">
+      <div class="icon">🚐</div>
+      <p>등록된 차량·업체가 아직 없습니다. 위에서 첫 항목을 등록해보세요.</p>
+    </div>
+    <div id="vehicle-content" style="display:none;">
+      <div class="stat-row" id="vehicle-stats"></div>
+      <div class="filter-row" id="vehicle-branch-filter"></div>
+
+      <div class="section-title" style="justify-content:space-between;">
+        <span>차량 목록</span>
+        <button class="export-btn small" id="vehicle-export">⬇ 차량 내보내기</button>
+      </div>
+      <table><thead><tr>
+        <th>차량번호</th><th>차종</th><th>인승</th><th>연식</th><th>소유형태</th><th>배정호차</th><th>폐차여부</th>
+      </tr></thead><tbody id="vehicle-body"></tbody></table>
+
+      <div class="section-title" style="justify-content:space-between;">
+        <span>업체 목록</span>
+        <button class="export-btn small" id="company-export">⬇ 업체 내보내기</button>
+      </div>
+      <table><thead><tr>
+        <th>업체명</th><th>사업자등록번호</th><th>대표자</th><th>연락처</th>
+      </tr></thead><tbody id="company-body"></tbody></table>
+    </div>
+  </section>
+
+  <!-- 이슈(운행예외) 관리 -->
+  <section class="view" id="view-issue">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:18px;">
+      <div style="font-size:14px;font-weight:800;color:var(--navy);margin-bottom:12px;">➕ 신규 이슈 등록</div>
+      <div class="filter-row">
+        <input class="search-input" id="issueFormHocha" placeholder="호차 (예: 장안 11호)">
+        <select id="issueFormType" class="search-input" style="min-width:110px;">
+          <option value="차량고장">차량고장</option>
+          <option value="기사결원">기사결원</option>
+          <option value="동승자결원">동승자결원</option>
+          <option value="사고">사고</option>
+          <option value="기타">기타</option>
+        </select>
+        <label style="font-size:12px;color:var(--muted);">발생일 <input type="date" id="issueFormDate" style="margin-left:4px;"></label>
+        <input class="search-input" id="issueFormAction" placeholder="임시조치 (예: 대체차량 투입)">
+        <input class="search-input" id="issueFormTarget" placeholder="조치대상 (예: 72나5678)">
+        <button class="upload-btn" id="issueFormSubmit" style="background:var(--navy);color:#fff;">등록</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">※ 종료일은 비워두고 등록하면 '진행중'으로 표시됩니다. 조치가 끝나면 아래 목록에서 종료 처리해주세요.</div>
+    </div>
+
+    <div id="issue-empty" class="empty">
+      <div class="icon">⚠️</div>
+      <p>등록된 이슈가 없습니다. 문제가 생기면 위에서 바로 등록해주세요.</p>
+    </div>
+    <div id="issue-content" style="display:none;">
+      <div class="stat-row" id="issue-stats"></div>
+      <div class="filter-row" id="issue-branch-filter"></div>
+      <div class="filter-row" style="justify-content:flex-end;">
+        <button class="export-btn" id="issue-export">⬇ 현재 목록 엑셀로 내보내기</button>
+      </div>
+      <table><thead><tr>
+        <th>호차</th><th>이슈종류</th><th>발생일</th><th>임시조치</th><th>조치대상</th><th>종료일</th><th>상태</th>
+      </tr></thead><tbody id="issue-body"></tbody></table>
+    </div>
+  </section>
+
+  <!-- 정류장·학생현황 -->
+  <section class="view" id="view-stop">
+    <div id="stop-empty" class="empty">
+      <div class="icon">📍</div>
+      <p><b>업로드된 자료가 없습니다.</b><br>'정류장' 또는 '학생_기본정보' 탭이 포함된 엑셀 파일을 업로드해주세요.</p>
+    </div>
+    <div id="stop-content" style="display:none;">
+      <div class="stat-row" id="stop-stats"></div>
+      <div class="filter-row" id="stop-branch-filter"></div>
+
+      <div class="section-title" style="justify-content:space-between;">
+        <span>정류장 목록</span>
+        <button class="export-btn small" id="stop-export">⬇ 정류장 내보내기</button>
+      </div>
+      <div class="filter-row">
+        <button class="chip active" data-usage="전체">전체</button>
+        <button class="chip" data-usage="사용중">사용중만</button>
+      </div>
+      <table><thead><tr>
+        <th>정류장명</th><th>소속분원</th><th>출처</th><th>사용상태</th><th>등원</th><th>하원</th>
+      </tr></thead><tbody id="stop-body"></tbody></table>
+
+      <div class="section-title" style="justify-content:space-between;">
+        <span>학생 목록(기본정보)</span>
+        <button class="export-btn small" id="student-export">⬇ 학생 내보내기</button>
+      </div>
+      <table><thead><tr>
+        <th>학생명</th><th>소속분원</th><th>왕복/편도</th><th>요일그룹</th><th>기본등원정류장</th><th>기본하원정류장</th>
+      </tr></thead><tbody id="student-body"></tbody></table>
+    </div>
+  </section>
+
+  <!-- 변경이력 -->
+  <section class="view" id="view-log">
+    <div id="log-empty" class="empty">
+      <div class="icon">🕘</div>
+      <p>아직 수정 이력이 없습니다.<br>기사/동승자/차량 팝업에서 정보를 수정하면 여기에 기록됩니다.</p>
+    </div>
+    <div id="log-content" style="display:none;">
+      <div class="stat-row" id="log-stats"></div>
+      <div class="filter-row">
+        <button class="chip active" data-logtype="전체">전체</button>
+        <button class="chip" data-logtype="기사">기사</button>
+        <button class="chip" data-logtype="동승자">동승자</button>
+        <button class="chip" data-logtype="차량">차량</button>
+      </div>
+      <div class="filter-row" style="justify-content:space-between;">
+        <input class="search-input" id="log-search" placeholder="대상(이름/차량번호) 검색">
+        <button class="export-btn" id="log-export">⬇ 현재 목록 엑셀로 내보내기</button>
+      </div>
+      <table><thead><tr>
+        <th>시각</th><th>구분</th><th>대상</th><th>항목</th><th>변경전</th><th>변경후</th>
+      </tr></thead><tbody id="log-body"></tbody></table>
+    </div>
+  </section>
+
+</main>
+
+<footer>바론네트웍스(주) 총무팀 · 셔틀운영 데이터설계서 v1.0 기준 · 엑셀 업로드 후 '☁️ 서버에 저장'을 눌러야 다른 사람 화면에도 반영됩니다</footer>
+
+<script>
+const state = {};
+const SHEET_NAMES = [
+  "호차","기사","동승자","차량","업체","업체_상호변경이력","계약","서류",
+  "배정이력_기사","배정이력_동승자","배정이력_차량","배정이력_정류장",
+  "정류장","학생_기본정보","학생_일별기록","이슈","외부시스템계정","사용자계정"
+];
+const BRANCHES = ["장안","서수원","수원","운정1","운정2","남동탄"];
+const TOP_DOCS = ["범죄경력조회","안전교육확인증","통학버스신고필증"];
+
+// 화면(호차현황판/계약관리/서류알림함)은 기존 변수명을 그대로 사용하도록 별칭 연결
+function syncAliases(){
+  state.hocha = state['호차'] || [];
+  state.contract = state['계약'] || [];
+  state.doc = state['서류'] || [];
+}
+
+// 현재 화면에 표시 중인(필터/정렬 반영된) 목록을 export 시점에 참조하기 위한 저장소
+const current = { hocha: [], contract: [], docTop: [], docNormal: [] };
+
+/* ---------------- Firebase(Firestore) 연동 ---------------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyACokruLFwbkCpxriOdQgVZAQfryYBmUxM",
+  authDomain: "baron-shuttle-ops.firebaseapp.com",
+  projectId: "baron-shuttle-ops",
+  storageBucket: "baron-shuttle-ops.firebasestorage.app",
+  messagingSenderId: "278466071248",
+  appId: "1:278466071248:web:e22df780d05e6b46772cd5"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Firestore는 Date 객체를 그대로 못 받는 경우가 있어, 저장 전 문자열로 정리
+// 또한 빈 이름의 필드가 섞여 들어오지 않도록 한 번 더 걸러낸다(안전장치)
+function sanitize(rows){
+  const clean = JSON.parse(JSON.stringify(rows || []));
+  return clean.map(row => {
+    const out = {};
+    Object.keys(row).forEach(k => { if(k) out[k] = row[k]; });
+    return out;
+  });
+}
+
+// 정보 수정 시 "무엇이 언제 A→B로 바뀌었는지"만 가볍게 남기는 변경이력
+function recordChanges(entityType, entityLabel, oldRec, newRec, fieldLabels){
+  const now = new Date().toISOString();
+  const entries = [];
+  Object.keys(fieldLabels).forEach(key => {
+    const before = (oldRec[key] || '').toString().trim();
+    const after = (newRec[key] || '').toString().trim();
+    if(before !== after){
+      entries.push({
+        시각: now,
+        구분: entityType,
+        대상: entityLabel,
+        항목: fieldLabels[key],
+        변경전: before || '(없음)',
+        변경후: after || '(없음)',
+      });
+    }
+  });
+  if(entries.length){
+    state.changeLog = state.changeLog || [];
+    state.changeLog.unshift(...entries); // 최신이 위로
+  }
+  return entries.length;
+}
+async function saveChangeLog(){
+  await db.collection('shuttle_data').doc('change_log').set({ rows: sanitize(state.changeLog || []) });
+}
+
+async function saveToServer(){
+  const btn = document.getElementById('saveBtn');
+  const original = btn.textContent;
+  btn.textContent = "저장 중...";
+  btn.disabled = true;
+  try{
+    const now = new Date().toISOString();
+    await Promise.all(SHEET_NAMES.map(name =>
+      db.collection('shuttle_data').doc(name).set({ rows: sanitize(state[name]), updatedAt: now })
+    ));
+    document.getElementById('fileStatus').textContent = `서버에 저장 완료 - ${SHEET_NAMES.length}개 탭 (${new Date().toLocaleTimeString('ko-KR')})`;
+  }catch(err){
+    console.error(err);
+    document.getElementById('fileStatus').textContent = "서버 저장 실패: 콘솔을 확인해주세요";
+  }finally{
+    btn.textContent = original;
+    btn.disabled = false;
+  }
+}
+
+async function loadFromServer(){
+  try{
+    const visDoc = await db.collection('shuttle_data').doc('tab_visibility').get();
+    tabVisibility = visDoc.exists ? visDoc.data() : defaultVisibility();
+    renderTabs();
+
+    const logDoc = await db.collection('shuttle_data').doc('change_log').get();
+    state.changeLog = logDoc.exists ? (logDoc.data().rows || []) : [];
+
+    const results = await Promise.all(
+      SHEET_NAMES.map(name => db.collection('shuttle_data').doc(name).get())
+    );
+    SHEET_NAMES.forEach((name, i) => {
+      state[name] = results[i].exists ? (results[i].data().rows || []) : [];
+    });
+    syncAliases();
+    renderAll();
+    const hasAny = SHEET_NAMES.some(name => (state[name] || []).length > 0);
+    document.getElementById('fileStatus').textContent = hasAny
+      ? `서버 자료 불러옴 - ${SHEET_NAMES.length}개 탭 확인 (${new Date().toLocaleTimeString('ko-KR')})`
+      : "서버에 저장된 자료가 없습니다. 엑셀을 업로드하고 '서버에 저장'을 눌러주세요.";
+  }catch(err){
+    console.error(err);
+    tabVisibility = defaultVisibility();
+    renderTabs();
+    document.getElementById('fileStatus').textContent = "서버 연결 실패: 엑셀을 직접 업로드해주세요";
+  }
+}
+
+function renderAll(){
+  renderHocha(); renderContract(); renderDoc();
+  renderStaff(); renderVehicleCompany(); renderIssue(); renderStopStudent(); renderChangeLog();
+}
+
+document.getElementById('saveBtn').addEventListener('click', saveToServer);
+window.addEventListener('DOMContentLoaded', loadFromServer);
+
+function todayStamp(){
+  const d = new Date();
+  return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function exportExcel(rows, sheetName, filenamePrefix){
+  if(!rows || rows.length === 0){
+    alert('내보낼 자료가 없습니다.');
+    return;
+  }
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  XLSX.writeFile(wb, `${filenamePrefix}_${todayStamp()}.xlsx`);
+}
+
+document.getElementById('uploadBtn').addEventListener('click', () => document.getElementById('fileInput').click());
+document.getElementById('fileInput').addEventListener('change', handleFile);
+
+const TABS = [
+  { key:'hocha',    label:'호차현황판',   view:'view-hocha' },
+  { key:'contract', label:'계약관리',     view:'view-contract' },
+  { key:'doc',      label:'서류알림함',   view:'view-doc' },
+  { key:'staff',    label:'기사·동승자현황', view:'view-staff' },
+  { key:'vehicle',  label:'차량·업체현황',   view:'view-vehicle' },
+  { key:'issue',    label:'이슈관리',     view:'view-issue' },
+  { key:'stop',     label:'정류장·학생현황', view:'view-stop' },
+  { key:'log',      label:'변경이력',     view:'view-log' },
+];
+let tabVisibility = {};
+let activeTabKey = 'hocha';
+const ADMIN_PASSWORD = "2026";
+let adminUnlocked = false;
+
+function defaultVisibility(){
+  const v = {};
+  TABS.forEach(t => v[t.key] = true);
+  return v;
+}
+
+function renderTabs(){
+  const bar = document.getElementById('tabsBar');
+  bar.innerHTML = "";
+  const visibleTabs = TABS.filter(t => tabVisibility[t.key] !== false);
+  if(!visibleTabs.some(t => t.key === activeTabKey)){
+    activeTabKey = visibleTabs.length ? visibleTabs[0].key : null;
+  }
+  visibleTabs.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn' + (t.key === activeTabKey ? ' active' : '');
+    btn.textContent = t.label;
+    btn.addEventListener('click', () => {
+      activeTabKey = t.key;
+      renderTabs();
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById(t.view).classList.add('active');
+    });
+    bar.appendChild(btn);
+  });
+  // 첫 렌더 시 활성 화면 보이기
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const activeTab = TABS.find(t => t.key === activeTabKey);
+  if(activeTab) document.getElementById(activeTab.view).classList.add('active');
+}
+
+/* ---------------- 화면 관리(관리자) 모달 ---------------- */
+const settingsOverlay = document.getElementById('settingsOverlay');
+document.getElementById('settingsBtn').addEventListener('click', () => {
+  settingsOverlay.classList.add('active');
+  if(adminUnlocked){
+    showToggleView();
+  }else{
+    document.getElementById('settingsAuthView').style.display = 'block';
+    document.getElementById('settingsToggleView').style.display = 'none';
+    document.getElementById('adminPwInput').value = '';
+  }
+});
+document.getElementById('settingsCancelBtn').addEventListener('click', () => settingsOverlay.classList.remove('active'));
+document.getElementById('settingsCloseBtn').addEventListener('click', () => settingsOverlay.classList.remove('active'));
+
+document.getElementById('adminPwSubmit').addEventListener('click', () => {
+  const pw = document.getElementById('adminPwInput').value;
+  if(pw === ADMIN_PASSWORD){
+    adminUnlocked = true;
+    showToggleView();
+  }else{
+    alert('비밀번호가 올바르지 않습니다.');
+  }
+});
+
+function showToggleView(){
+  document.getElementById('settingsAuthView').style.display = 'none';
+  document.getElementById('settingsToggleView').style.display = 'block';
+  const list = document.getElementById('tabToggleList');
+  list.innerHTML = "";
+  TABS.forEach(t => {
+    const row = document.createElement('div');
+    row.className = 'toggle-row';
+    const checked = tabVisibility[t.key] !== false;
+    row.innerHTML = `
+      <span>${t.label}</span>
+      <label class="switch">
+        <input type="checkbox" data-key="${t.key}" ${checked ? 'checked' : ''}>
+        <span class="slider"></span>
+      </label>`;
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('settingsSaveBtn').addEventListener('click', async () => {
+  const inputs = document.querySelectorAll('#tabToggleList input[type=checkbox]');
+  const newVisibility = {};
+  inputs.forEach(inp => { newVisibility[inp.dataset.key] = inp.checked; });
+  tabVisibility = newVisibility;
+  renderTabs();
+  settingsOverlay.classList.remove('active');
+  try{
+    await db.collection('shuttle_data').doc('tab_visibility').set(tabVisibility);
+  }catch(err){
+    console.error(err);
+    alert('노출 설정 저장에 실패했습니다. (화면에는 즉시 반영되었지만, 다른 사용자에게는 반영되지 않을 수 있습니다)');
+  }
+});
+
+function handleFile(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  document.getElementById('fileStatus').textContent = "불러오는 중...";
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try{
+      const wb = XLSX.read(ev.target.result, {type:'array', cellDates:true});
+      SHEET_NAMES.forEach(name => { state[name] = readSheet(wb, name); });
+      syncAliases();
+      document.getElementById('fileStatus').textContent = `"${file.name}" 반영됨 - ${SHEET_NAMES.length}개 탭 읽음 (${new Date().toLocaleTimeString('ko-KR')})`;
+      renderAll();
+    }catch(err){
+      document.getElementById('fileStatus').textContent = "업로드 실패: 형식을 확인해주세요";
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// header row 1, sample row 2 -> real data starts row index 2 (0-indexed)
+function readSheet(wb, name){
+  const sheet = wb.Sheets[name];
+  if(!sheet) return [];
+  const aoa = XLSX.utils.sheet_to_json(sheet, {header:1, defval:""});
+  const headers = aoa[0] || [];
+  const dataRows = aoa.slice(2); // 0=헤더행, 1=예시행 → 그 다음부터 실제 데이터
+  return dataRows
+    .map(row => {
+      const obj = {};
+      headers.forEach((h, i) => {
+        if(!h) return; // 이름 없는(빈) 헤더 칸은 무시 — Firestore는 빈 필드명을 허용하지 않음
+        obj[h] = row[i] !== undefined ? row[i] : "";
+      });
+      return obj;
+    })
+    .filter(r => Object.values(r).some(v => String(v).trim() !== ""));
+}
+
+function toDate(v){
+  if(!v) return null;
+  if(v instanceof Date) return v;
+  const d = new Date(v);
+  return isNaN(d) ? null : d;
+}
+function dDay(dateVal){
+  const d = toDate(dateVal);
+  if(!d) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  d.setHours(0,0,0,0);
+  return Math.round((d-today)/86400000);
+}
+function ddayBadge(days){
+  if(days===null) return `<span class="dday gray">-</span>`;
+  if(days < 0) return `<span class="dday red">D+${Math.abs(days)} (만료)</span>`;
+  if(days <= 30) return `<span class="dday red">D-${days}</span>`;
+  if(days <= 90) return `<span class="dday gold">D-${days}</span>`;
+  return `<span class="dday green">D-${days}</span>`;
+}
+function fmtDate(v){
+  const d = toDate(v);
+  if(!d) return "-";
+  return d.toISOString().slice(0,10);
+}
+
+/* ---------------- 이름 클릭 → 기사/동승자 상세 팝업 (어느 탭에서든 공통 사용) ---------------- */
+function findPerson(name){
+  if(!name) return null;
+  const drivers = (state['기사']||[]).map(r => ({...r, __role:'기사'}));
+  const attendants = (state['동승자']||[]).map(r => ({...r, __role:'동승자'}));
+  return [...drivers, ...attendants].find(p => p['이름'] === name) || null;
+}
+// 이름이 있으면 클릭 가능한 링크 형태로, 없으면 '-' 로 표시
+function personLink(name){
+  if(!name) return '-';
+  const p = findPerson(name);
+  if(!p) return escapeHtmlLite(name); // 기사/동승자 탭에 아직 등록 안 된 이름이면 그냥 텍스트로
+  return `<a href="#" onclick="event.preventDefault();openPersonDetail('${name.replace(/'/g,"\\'")}')" style="color:var(--slate);text-decoration:underline;text-underline-offset:2px;cursor:pointer;">${escapeHtmlLite(name)}</a>`;
+}
+function escapeHtmlLite(s){
+  return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function openPersonDetail(name){
+  const p = findPerson(name);
+  const overlay = document.getElementById('personOverlay');
+  if(!p){
+    document.getElementById('personModalBody').innerHTML = `
+      <h3>${escapeHtmlLite(name)}</h3>
+      <p class="modal-desc">기사·동승자현황 탭에 아직 등록되지 않은 이름입니다.</p>
+      <div class="modal-actions"><button class="upload-btn" style="background:var(--navy);color:#fff;" onclick="document.getElementById('personOverlay').classList.remove('active')">닫기</button></div>
+    `;
+    overlay.classList.add('active');
+    return;
+  }
+  renderPersonView(p);
+  overlay.classList.add('active');
+}
+const PERSON_EDIT_FIELDS = {
+  '연락처':'연락처', '소속업체':'소속업체', '현재배정호차':'배정호차', '인력구분':'인력구분',
+  '채용일':'채용일', '퇴사일':'퇴사일', '급여':'급여',
+  '범죄경력조회일':'범죄경력조회일', '안전교육이수일':'안전교육이수일',
+};
+function renderPersonView(p){
+  const docWarn = (!p['범죄경력조회일'] || !p['안전교육이수일']);
+  document.getElementById('personModalBody').innerHTML = `
+    <h3>${escapeHtmlLite(p['이름'])} <span class="badge ${p.__role==='기사'?'top':'gray'}" style="margin-left:6px;vertical-align:middle;">${p.__role}</span></h3>
+    <div style="font-size:13px;line-height:1.9;margin-top:10px;">
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">연락처</b>${p['연락처']||'-'}</div>
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">소속업체</b>${p['소속업체']||'-'}</div>
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">배정호차</b>${p['현재배정호차']||'-'} ${p['배정부(시간대)']?('· '+p['배정부(시간대)']):''}</div>
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">인력구분</b>${p['인력구분']||'-'}</div>
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">채용일</b>${fmtDate(p['채용일'])} ${p['퇴사일']?('· 퇴사 '+fmtDate(p['퇴사일'])):''}</div>
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">급여</b>${p['급여']||'-'}</div>
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">범죄경력조회</b>${fmtDate(p['범죄경력조회일'])}</div>
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">안전교육이수</b>${fmtDate(p['안전교육이수일'])}</div>
+      ${docWarn ? `<div style="margin-top:8px;"><span class="badge red">⚠ 서류 일부 미비</span></div>` : ''}
+    </div>
+    <div class="modal-actions">
+      <button class="chip" onclick="goToStaffTab('${p['이름'].replace(/'/g,"\\'")}')">기사·동승자현황에서 보기</button>
+      <button class="chip" onclick="renderPersonEditForm('${p.__role}','${p['이름'].replace(/'/g,"\\'")}')">✏️ 수정</button>
+      <button class="upload-btn" style="background:var(--navy);color:#fff;" onclick="document.getElementById('personOverlay').classList.remove('active')">닫기</button>
+    </div>
+  `;
+}
+function renderPersonEditForm(role, name){
+  const list = state[role] || [];
+  const idx = list.findIndex(x => x['이름'] === name);
+  if(idx < 0) return;
+  const p = list[idx];
+  document.getElementById('personModalBody').innerHTML = `
+    <h3>${escapeHtmlLite(p['이름'])} 정보 수정</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+      ${Object.keys(PERSON_EDIT_FIELDS).map(key => `
+        <label style="font-size:11px;color:var(--muted);font-weight:700;display:flex;flex-direction:column;gap:4px;">
+          ${PERSON_EDIT_FIELDS[key]}
+          <input type="${key.includes('일')?'date':'text'}" class="search-input" id="pedit_${key}" value="${(p[key]||'').toString().replace(/"/g,'&quot;')}">
+        </label>`).join('')}
+    </div>
+    <div class="modal-actions">
+      <button class="chip" onclick="renderPersonView(findPerson('${name.replace(/'/g,"\\'")}'))">취소</button>
+      <button class="upload-btn" style="background:var(--navy);color:#fff;" id="personSaveBtn" onclick="savePersonEdit('${role}','${name.replace(/'/g,"\\'")}')">저장</button>
+    </div>
+  `;
+}
+async function savePersonEdit(role, name){
+  const list = state[role] || [];
+  const idx = list.findIndex(x => x['이름'] === name);
+  if(idx < 0) return;
+  const oldRec = { ...list[idx] };
+  const newRec = { ...list[idx] };
+  Object.keys(PERSON_EDIT_FIELDS).forEach(key => {
+    newRec[key] = document.getElementById('pedit_'+key).value.trim();
+  });
+  const btn = document.getElementById('personSaveBtn');
+  btn.textContent = '저장 중...'; btn.disabled = true;
+  try{
+    list[idx] = newRec;
+    state[role] = list;
+    syncAliases();
+    const changed = recordChanges(role, name, oldRec, newRec, PERSON_EDIT_FIELDS);
+    await saveToServer();
+    if(changed) await saveChangeLog();
+    renderStaff();
+    renderChangeLog();
+    renderPersonView(newRec.__role ? newRec : {...newRec, __role: role});
+  }catch(err){
+    console.error(err);
+    alert('저장에 실패했습니다.');
+    btn.textContent = '저장'; btn.disabled = false;
+  }
+}
+document.getElementById('personOverlay').addEventListener('click', (e)=>{ if(e.target.id==='personOverlay') e.currentTarget.classList.remove('active'); });
+
+function goToStaffTab(name){
+  document.getElementById('personOverlay').classList.remove('active');
+  activeTabKey = 'staff';
+  renderTabs();
+  staffSearchTerm = name;
+  document.getElementById('staff-search').value = name;
+  staffActiveOnly = false;
+  document.getElementById('staff-active-only').checked = false;
+  renderStaff();
+}
+
+/* ---------------- 차량번호 클릭 → 상세 팝업 ---------------- */
+function findVehicle(no){
+  if(!no) return null;
+  return (state['차량']||[]).find(v => v['차량번호'] === no) || null;
+}
+function vehicleLink(no){
+  if(!no) return '-';
+  const v = findVehicle(no);
+  if(!v) return escapeHtmlLite(no);
+  return `<a href="#" onclick="event.preventDefault();openVehicleDetail('${no.replace(/'/g,"\\'")}')" style="color:var(--slate);text-decoration:underline;text-underline-offset:2px;cursor:pointer;">${escapeHtmlLite(no)}</a>`;
+}
+function openVehicleDetail(no){
+  const v = findVehicle(no);
+  const overlay = document.getElementById('personOverlay');
+  if(!v){
+    document.getElementById('personModalBody').innerHTML = `
+      <h3>${escapeHtmlLite(no)}</h3>
+      <p class="modal-desc">차량·업체현황 탭에 아직 등록되지 않은 차량번호입니다.</p>
+      <div class="modal-actions"><button class="upload-btn" style="background:var(--navy);color:#fff;" onclick="document.getElementById('personOverlay').classList.remove('active')">닫기</button></div>
+    `;
+    overlay.classList.add('active');
+    return;
+  }
+  renderVehicleView(v);
+  overlay.classList.add('active');
+}
+const VEHICLE_EDIT_FIELDS = {
+  '차종':'차종', '인승':'인승', '연식':'연식', '소유형태':'소유형태',
+  '현재배정호차':'배정호차', '등록일':'등록일', '폐차일':'폐차일', '비고':'비고',
+};
+function renderVehicleView(v){
+  document.getElementById('personModalBody').innerHTML = `
+    <h3>🚐 ${escapeHtmlLite(v['차량번호'])} ${v['폐차일']?`<span class="badge red" style="margin-left:6px;">폐차</span>`:''}</h3>
+    <div style="font-size:13px;line-height:1.9;margin-top:10px;">
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">차종</b>${v['차종']||'-'}</div>
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">인승</b>${v['인승']||'-'}</div>
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">연식</b>${v['연식']||'-'}</div>
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">소유형태</b>${v['소유형태']||'-'}</div>
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">배정호차</b>${v['현재배정호차']||'-'}</div>
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">등록일</b>${fmtDate(v['등록일'])} ${v['폐차일']?('· 폐차 '+fmtDate(v['폐차일'])):''}</div>
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">비고</b>${v['비고']||'-'}</div>
+    </div>
+    <div class="modal-actions">
+      <button class="chip" onclick="renderVehicleEditForm('${v['차량번호'].replace(/'/g,"\\'")}')">✏️ 수정</button>
+      <button class="upload-btn" style="background:var(--navy);color:#fff;" onclick="document.getElementById('personOverlay').classList.remove('active')">닫기</button>
+    </div>
+  `;
+}
+function renderVehicleEditForm(no){
+  const list = state['차량'] || [];
+  const idx = list.findIndex(x => x['차량번호'] === no);
+  if(idx < 0) return;
+  const v = list[idx];
+  document.getElementById('personModalBody').innerHTML = `
+    <h3>${escapeHtmlLite(v['차량번호'])} 정보 수정</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+      ${Object.keys(VEHICLE_EDIT_FIELDS).map(key => `
+        <label style="font-size:11px;color:var(--muted);font-weight:700;display:flex;flex-direction:column;gap:4px;">
+          ${VEHICLE_EDIT_FIELDS[key]}
+          <input type="${key.includes('일')?'date':'text'}" class="search-input" id="vedit_${key}" value="${(v[key]||'').toString().replace(/"/g,'&quot;')}">
+        </label>`).join('')}
+    </div>
+    <div class="modal-actions">
+      <button class="chip" onclick="renderVehicleView(findVehicle('${no.replace(/'/g,"\\'")}'))">취소</button>
+      <button class="upload-btn" style="background:var(--navy);color:#fff;" id="vehicleSaveBtn" onclick="saveVehicleEdit('${no.replace(/'/g,"\\'")}')">저장</button>
+    </div>
+  `;
+}
+async function saveVehicleEdit(no){
+  const list = state['차량'] || [];
+  const idx = list.findIndex(x => x['차량번호'] === no);
+  if(idx < 0) return;
+  const oldRec = { ...list[idx] };
+  const newRec = { ...list[idx] };
+  Object.keys(VEHICLE_EDIT_FIELDS).forEach(key => {
+    newRec[key] = document.getElementById('vedit_'+key).value.trim();
+  });
+  const btn = document.getElementById('vehicleSaveBtn');
+  btn.textContent = '저장 중...'; btn.disabled = true;
+  try{
+    list[idx] = newRec;
+    state['차량'] = list;
+    syncAliases();
+    const changed = recordChanges('차량', no, oldRec, newRec, VEHICLE_EDIT_FIELDS);
+    await saveToServer();
+    if(changed) await saveChangeLog();
+    renderVehicleCompany();
+    renderChangeLog();
+    renderVehicleView(newRec);
+  }catch(err){
+    console.error(err);
+    alert('저장에 실패했습니다.');
+    btn.textContent = '저장'; btn.disabled = false;
+  }
+}
+
+/* ---------------- 호차 배지 클릭 → 관련 정보 전부 모아 보여주는 팝업 ---------------- */
+function findHocha(branch, hochaNo){
+  return (state['호차']||[]).find(h => h['소속분원']===branch && h['호차번호']===hochaNo) || null;
+}
+// 계약탭 등에서 "장안 11호"처럼 분원+호차번호가 합쳐진 문자열을 파싱해서 배지 링크로 변환
+function hochaComboLink(combo){
+  if(!combo) return `<span class="hocha-badge" style="min-width:auto;padding:4px 10px;"><span class="num" style="font-size:13px;">-</span></span>`;
+  const parts = String(combo).trim().split(/\s+/);
+  const branch = BRANCHES.includes(parts[0]) ? parts[0] : '';
+  const hochaNo = branch ? parts.slice(1).join(' ') : combo;
+  const clickable = branch && findHocha(branch, hochaNo);
+  return `<span class="hocha-badge" style="min-width:auto;padding:4px 10px;${clickable?'cursor:pointer;':''}" ${clickable?`onclick="openHochaDetail('${branch.replace(/'/g,"\\'")}','${hochaNo.replace(/'/g,"\\'")}')"`:''} title="${clickable?'클릭하면 이 호차의 전체 정보를 볼 수 있습니다':''}">
+    <span class="num" style="font-size:13px;">${escapeHtmlLite(combo)}</span>
+  </span>`;
+}
+
+function openHochaDetail(branch, hochaNo){
+  const h = findHocha(branch, hochaNo);
+  const overlay = document.getElementById('personOverlay');
+  if(!h){
+    document.getElementById('personModalBody').innerHTML = `
+      <h3>${escapeHtmlLite(branch)} ${escapeHtmlLite(hochaNo)}</h3>
+      <p class="modal-desc">호차현황판 탭에 아직 등록되지 않은 호차입니다.</p>
+      <div class="modal-actions"><button class="upload-btn" style="background:var(--navy);color:#fff;" onclick="document.getElementById('personOverlay').classList.remove('active')">닫기</button></div>
+    `;
+    overlay.classList.add('active');
+    return;
+  }
+  renderHochaView(h);
+  overlay.classList.add('active');
+}
+const HOCHA_EDIT_FIELDS = {
+  '현재차량(차량번호)':'차량번호', '현재기사(이름)':'기사이름', '현재동승자(이름)':'동승자이름',
+  '현재업체':'업체', '개설일':'개설일', '폐지일':'폐지일', '폐지사유':'폐지사유', '비고':'비고',
+};
+function renderHochaView(h){
+  const combo = `${h['소속분원']} ${h['호차번호']}`;
+  const contract = (state['계약']||[]).find(c => c['호차'] === combo);
+  const relatedDocs = (state['서류']||[]).filter(d => d['소속대상유형']==='호차' && d['소속대상(ID/이름)']===combo);
+
+  document.getElementById('personModalBody').innerHTML = `
+    <h3>🚌 ${escapeHtmlLite(h['소속분원'])} ${escapeHtmlLite(h['호차번호'])} ${h['폐지일']?`<span class="badge red" style="margin-left:6px;">폐지됨</span>`:''}</h3>
+    <div style="font-size:13px;line-height:1.9;margin-top:10px;">
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">개설일</b>${fmtDate(h['개설일'])} ${h['폐지일']?('· 폐지 '+fmtDate(h['폐지일'])+(h['폐지사유']?(' ('+h['폐지사유']+')'):'')):''}</div>
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">차량</b>${vehicleLink(h['현재차량(차량번호)'])}</div>
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">기사</b>${personLink(h['현재기사(이름)'])}</div>
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">동승자</b>${personLink(h['현재동승자(이름)'])}</div>
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">업체</b>${h['현재업체']||'-'}</div>
+      <div><b style="color:var(--muted);display:inline-block;width:90px;">비고</b>${h['비고']||'-'}</div>
+    </div>
+
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+      <h4 style="font-size:12px;color:var(--navy);margin:0 0 6px;">계약 정보</h4>
+      ${contract ? `
+        <div style="font-size:13px;line-height:1.8;">
+          <div>업체 <b>${contract['업체']||'-'}</b> · 계약기간 ${fmtDate(contract['계약시작일'])} ~ ${fmtDate(contract['계약종료일'])}</div>
+          <div>급여 ${contract['급여']||'-'} · 운행 ${contract['운행횟수']||'-'} · 지역 ${contract['운행지역']||'-'}</div>
+        </div>` : `<div style="font-size:12.5px;color:var(--muted);">등록된 계약 정보가 없습니다.</div>`}
+    </div>
+
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+      <h4 style="font-size:12px;color:var(--navy);margin:0 0 6px;">호차 앞으로 등록된 서류</h4>
+      ${relatedDocs.length ? relatedDocs.map(d => `
+        <div style="font-size:12.5px;padding:3px 0;">
+          <span class="badge gray">${d['서류종류']}</span> ${fmtDate(d['발급일'])}${d['만료일']?(' ~ '+fmtDate(d['만료일'])):''} · ${statusBadge(d['상태'])}
+        </div>`).join('') : `<div style="font-size:12.5px;color:var(--muted);">등록된 서류가 없습니다.</div>`}
+    </div>
+
+    <div class="modal-actions">
+      <button class="chip" onclick="renderHochaEditForm('${h['소속분원'].replace(/'/g,"\\'")}','${h['호차번호'].replace(/'/g,"\\'")}')">✏️ 수정</button>
+      <button class="upload-btn" style="background:var(--navy);color:#fff;" onclick="document.getElementById('personOverlay').classList.remove('active')">닫기</button>
+    </div>
+  `;
+}
+function renderHochaEditForm(branch, hochaNo){
+  const list = state['호차'] || [];
+  const idx = list.findIndex(x => x['소속분원']===branch && x['호차번호']===hochaNo);
+  if(idx < 0) return;
+  const h = list[idx];
+  document.getElementById('personModalBody').innerHTML = `
+    <h3>${escapeHtmlLite(branch)} ${escapeHtmlLite(hochaNo)} 정보 수정</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+      ${Object.keys(HOCHA_EDIT_FIELDS).map(key => `
+        <label style="font-size:11px;color:var(--muted);font-weight:700;display:flex;flex-direction:column;gap:4px;">
+          ${HOCHA_EDIT_FIELDS[key]}
+          <input type="${key.includes('일')?'date':'text'}" class="search-input" id="hedit_${key}" value="${(h[key]||'').toString().replace(/"/g,'&quot;')}">
+        </label>`).join('')}
+    </div>
+    <div class="modal-actions">
+      <button class="chip" onclick="renderHochaView(findHocha('${branch.replace(/'/g,"\\'")}','${hochaNo.replace(/'/g,"\\'")}'))">취소</button>
+      <button class="upload-btn" style="background:var(--navy);color:#fff;" id="hochaSaveBtn" onclick="saveHochaEdit('${branch.replace(/'/g,"\\'")}','${hochaNo.replace(/'/g,"\\'")}')">저장</button>
+    </div>
+  `;
+}
+async function saveHochaEdit(branch, hochaNo){
+  const list = state['호차'] || [];
+  const idx = list.findIndex(x => x['소속분원']===branch && x['호차번호']===hochaNo);
+  if(idx < 0) return;
+  const oldRec = { ...list[idx] };
+  const newRec = { ...list[idx] };
+  Object.keys(HOCHA_EDIT_FIELDS).forEach(key => {
+    newRec[key] = document.getElementById('hedit_'+key).value.trim();
+  });
+  const btn = document.getElementById('hochaSaveBtn');
+  btn.textContent = '저장 중...'; btn.disabled = true;
+  try{
+    list[idx] = newRec;
+    state['호차'] = list;
+    syncAliases();
+    const changed = recordChanges('호차', `${branch} ${hochaNo}`, oldRec, newRec, HOCHA_EDIT_FIELDS);
+    await saveToServer();
+    if(changed) await saveChangeLog();
+    renderHocha();
+    renderChangeLog();
+    renderHochaView(newRec);
+  }catch(err){
+    console.error(err);
+    alert('저장에 실패했습니다.');
+    btn.textContent = '저장'; btn.disabled = false;
+  }
+}
+
+/* ---------------- 호차현황판 ---------------- */
+let activeBranch = "전체";
+let hochaSearchTerm = "";
+let contractBranchFilter = "전체";
+let vehicleBranchFilter = "전체";
+let issueBranchFilter = "전체";
+let stopBranchFilter = "전체";
+
+// 계약/기사/차량/이슈 데이터는 '호차' 또는 '현재배정호차' 필드에 "장안 11호"처럼
+// 분원명이 맨 앞에 붙은 문자열로 저장되므로, 첫 단어를 분원명으로 추출한다.
+function branchFromRef(refStr){
+  if(!refStr) return null;
+  const first = String(refStr).trim().split(/\s+/)[0];
+  return BRANCHES.includes(first) ? first : null;
+}
+function renderGenericBranchFilter(containerId, current, onChange){
+  const wrap = document.getElementById(containerId);
+  wrap.innerHTML = "";
+  ["전체", ...BRANCHES].forEach(b => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (b === current ? ' active' : '');
+    chip.textContent = b;
+    chip.addEventListener('click', onChange.bind(null, b));
+    wrap.appendChild(chip);
+  });
+}
+
+function renderBranchFilter(){
+  const wrap = document.getElementById('branch-filter');
+  wrap.innerHTML = "";
+  ["전체", ...BRANCHES].forEach(b=>{
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (b===activeBranch ? ' active' : '');
+    chip.textContent = b;
+    chip.addEventListener('click', ()=>{ activeBranch = b; renderHocha(); });
+    wrap.appendChild(chip);
+  });
+}
+
+document.getElementById('hocha-search').addEventListener('input', (e)=>{
+  hochaSearchTerm = e.target.value.trim();
+  renderHocha();
+});
+
+function renderHocha(){
+  const has = state.hocha.length > 0;
+  document.getElementById('hocha-empty').style.display = has ? 'none' : 'block';
+  document.getElementById('hocha-content').style.display = has ? 'block' : 'none';
+  if(!has) return;
+
+  renderBranchFilter();
+  const grid = document.getElementById('hocha-grid');
+  grid.innerHTML = "";
+
+  let rows = state.hocha;
+  if(activeBranch !== "전체") rows = rows.filter(r => r['소속분원'] === activeBranch);
+  if(hochaSearchTerm){
+    const t = hochaSearchTerm.toLowerCase();
+    rows = rows.filter(r => String(r['호차번호']).toLowerCase().includes(t) || String(r['현재기사(이름)']).toLowerCase().includes(t));
+  }
+
+  current.hocha = rows;
+
+  if(rows.length === 0){
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1;padding:40px;">조건에 맞는 호차가 없습니다.</div>`;
+    return;
+  }
+
+  rows.forEach(r=>{
+    const retired = !!r['폐지일'];
+    const card = document.createElement('div');
+    card.className = 'hocha-card';
+    card.innerHTML = `
+      <div class="head">
+        <div class="hocha-badge ${retired?'retired':''}" onclick="openHochaDetail('${(r['소속분원']||'').replace(/'/g,"\\'")}','${(r['호차번호']||'').replace(/'/g,"\\'")}')" style="cursor:pointer;" title="클릭하면 이 호차의 전체 정보를 볼 수 있습니다">
+          <div class="num">${r['호차번호']||'-'}</div>
+          <div class="branch">${r['소속분원']||''}</div>
+        </div>
+        <div class="meta">${retired ? '폐지됨 · '+fmtDate(r['폐지일']) : '개설 '+fmtDate(r['개설일'])}</div>
+      </div>
+      <dl>
+        <dt>기사</dt><dd>${personLink(r['현재기사(이름)'])}</dd>
+        <dt>동승자</dt><dd>${personLink(r['현재동승자(이름)'])}</dd>
+        <dt>차량</dt><dd>${vehicleLink(r['현재차량(차량번호)'])}</dd>
+        <dt>업체</dt><dd>${r['현재업체']||'-'}</dd>
+      </dl>
+      ${r['비고'] ? `<div style="font-size:12px;color:var(--muted);">${r['비고']}</div>` : ''}
+    `;
+    grid.appendChild(card);
+  });
+}
+
+/* ---------------- 계약관리 ---------------- */
+function renderContract(){
+  const has = state.contract.length > 0;
+  document.getElementById('contract-empty').style.display = has ? 'none' : 'block';
+  document.getElementById('contract-content').style.display = has ? 'block' : 'none';
+  if(!has) return;
+
+  renderGenericBranchFilter('contract-branch-filter', contractBranchFilter, (b) => { contractBranchFilter = b; renderContract(); });
+
+  let rows = [...state.contract].sort((a,b)=> toDate(a['계약종료일']) - toDate(b['계약종료일']));
+  if(contractBranchFilter !== '전체') rows = rows.filter(r => branchFromRef(r['호차']) === contractBranchFilter);
+  current.contract = rows;
+  const soon = rows.filter(r => { const d = dDay(r['계약종료일']); return d!==null && d<=60; }).length;
+  const expired = rows.filter(r => { const d = dDay(r['계약종료일']); return d!==null && d<0; }).length;
+
+  document.getElementById('contract-stats').innerHTML = `
+    <div class="stat-card"><div class="num">${rows.length}</div><div class="label">전체 계약</div></div>
+    <div class="stat-card warn"><div class="num">${soon}</div><div class="label">60일 이내 만료 예정</div></div>
+    <div class="stat-card danger"><div class="num">${expired}</div><div class="label">만료됨(갱신 미처리)</div></div>
+  `;
+
+  const body = document.getElementById('contract-body');
+  body.innerHTML = rows.map(r=>{
+    const days = dDay(r['계약종료일']);
+    return `<tr>
+      <td data-label="호차">${hochaComboLink(r['호차'])}</td>
+      <td data-label="업체">${r['업체']||'-'}</td>
+      <td data-label="계약기간">${fmtDate(r['계약시작일'])} ~ ${fmtDate(r['계약종료일'])}</td>
+      <td data-label="남은기간">${ddayBadge(days)}</td>
+      <td data-label="급여">${r['급여']||'-'}</td>
+      <td data-label="구분"><span class="badge ${r['갱신여부']==='갱신'?'green':'gray'}">${r['갱신여부']||'-'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------------- 서류알림함 ---------------- */
+function statusBadge(status){
+  const map = {'유효':'green','만료임박':'gold','만료':'red','재발급필요':'red'};
+  return `<span class="badge ${map[status]||'gray'}">${status||'-'}</span>`;
+}
+
+let docBranchFilter = "전체";
+
+// 서류는 분원이 직접 적혀있지 않고 "대상"(기사/동승자/차량/호차 이름 또는 번호)으로만
+// 연결되어 있어서, 그 대상이 속한 분원을 다른 탭 데이터에서 찾아서 알아낸다.
+function resolveDocBranch(row){
+  const type = row['소속대상유형'];
+  const target = row['소속대상(ID/이름)'];
+  if(!target) return null;
+  if(type === '호차') return branchFromRef(target);
+  if(type === '기사' || type === '동승자'){
+    const list = state[type] || [];
+    const person = list.find(p => p['이름'] === target);
+    return person ? branchFromRef(person['현재배정호차']) : null;
+  }
+  if(type === '차량'){
+    const v = (state['차량']||[]).find(v => v['차량번호'] === target);
+    return v ? branchFromRef(v['현재배정호차']) : null;
+  }
+  return null; // 업체 등은 특정 분원 소속이 아님
+}
+
+function renderDoc(){
+  const has = state.doc.length > 0;
+  document.getElementById('doc-empty').style.display = has ? 'none' : 'block';
+  document.getElementById('doc-content').style.display = has ? 'block' : 'none';
+  if(!has) return;
+
+  renderGenericBranchFilter('doc-branch-filter', docBranchFilter, (b) => { docBranchFilter = b; renderDoc(); });
+  const filteredDoc = docBranchFilter === '전체' ? state.doc : state.doc.filter(r => resolveDocBranch(r) === docBranchFilter);
+
+  const topRows = filteredDoc.filter(r => TOP_DOCS.includes(r['서류종류']));
+  const normalRows = filteredDoc.filter(r => !TOP_DOCS.includes(r['서류종류']));
+  current.docTop = topRows;
+  current.docNormal = normalRows;
+
+  const needsAction = filteredDoc.filter(r => ['만료','재발급필요','만료임박'].includes(r['상태'])).length;
+  const topNeedsAction = topRows.filter(r => ['만료','재발급필요','만료임박'].includes(r['상태'])).length;
+
+  document.getElementById('doc-stats').innerHTML = `
+    <div class="stat-card"><div class="num">${filteredDoc.length}</div><div class="label">전체 서류</div></div>
+    <div class="stat-card danger"><div class="num">${topNeedsAction}</div><div class="label">⭐최상 등급 중 조치 필요</div></div>
+    <div class="stat-card warn"><div class="num">${needsAction}</div><div class="label">전체 조치 필요 건수</div></div>
+  `;
+
+  const rowHtml = (r) => {
+    const days = r['만료일'] ? dDay(r['만료일']) : null;
+    return `<tr>
+      <td data-label="서류종류"><span class="badge top">${r['서류종류']||'-'}</span></td>
+      <td data-label="대상">${r['소속대상유형']||''} · ${(r['소속대상유형']==='기사'||r['소속대상유형']==='동승자') ? personLink(r['소속대상(ID/이름)']) : (r['소속대상(ID/이름)']||'-')}</td>
+      <td data-label="발급일">${fmtDate(r['발급일'])}</td>
+      <td data-label="만료일">${r['만료일'] ? fmtDate(r['만료일']) : '만료개념 없음'}</td>
+      <td data-label="남은기간">${r['만료일'] ? ddayBadge(days) : '-'}</td>
+      <td data-label="상태">${statusBadge(r['상태'])}</td>
+    </tr>`;
+  };
+
+  document.getElementById('doc-top-body').innerHTML = topRows.length
+    ? topRows.map(rowHtml).join('')
+    : `<tr><td colspan="6" style="text-align:center;color:var(--muted);">해당 자료 없음</td></tr>`;
+
+  document.getElementById('doc-normal-body').innerHTML = normalRows.length
+    ? normalRows.map(rowHtml).join('')
+    : `<tr><td colspan="6" style="text-align:center;color:var(--muted);">해당 자료 없음</td></tr>`;
+}
+
+/* ---------------- 기사·동승자현황 ---------------- */
+let staffRoleFilter = "전체";
+let staffSearchTerm = "";
+let staffActiveOnly = true;
+let staffBranchFilter = "전체";
+
+function renderStaff(){
+  const drivers = (state['기사']||[]).map(r => ({...r, __role:'기사'}));
+  const attendants = (state['동승자']||[]).map(r => ({...r, __role:'동승자'}));
+  const all = [...drivers, ...attendants];
+  const has = all.length > 0;
+  document.getElementById('staff-empty').style.display = has ? 'none' : 'block';
+  document.getElementById('staff-content').style.display = has ? 'block' : 'none';
+  if(!has) return;
+
+  renderGenericBranchFilter('staff-branch-filter', staffBranchFilter, (b) => { staffBranchFilter = b; renderStaff(); });
+
+  let rows = all;
+  if(staffBranchFilter !== '전체') rows = rows.filter(r => branchFromRef(r['현재배정호차']) === staffBranchFilter);
+  if(staffRoleFilter !== "전체") rows = rows.filter(r => r.__role === staffRoleFilter);
+  if(staffActiveOnly) rows = rows.filter(r => !r['퇴사일']);
+  if(staffSearchTerm){
+    const t = staffSearchTerm.toLowerCase();
+    rows = rows.filter(r => String(r['이름']||'').toLowerCase().includes(t));
+  }
+  current.staff = rows;
+
+  const activeCount = all.filter(r => !r['퇴사일']).length;
+  document.getElementById('staff-stats').innerHTML = `
+    <div class="stat-card"><div class="num">${all.length}</div><div class="label">전체 인원(기사+동승자)</div></div>
+    <div class="stat-card"><div class="num">${activeCount}</div><div class="label">재직중</div></div>
+    <div class="stat-card warn"><div class="num">${all.length - activeCount}</div><div class="label">퇴사</div></div>
+  `;
+
+  document.getElementById('staff-body').innerHTML = rows.length ? rows.map(r => `
+    <tr>
+      <td data-label="이름">${personLink(r['이름'])}</td>
+      <td data-label="역할"><span class="badge ${r.__role==='기사'?'top':'gray'}">${r.__role}</span></td>
+      <td data-label="연락처">${r['연락처']||'-'}</td>
+      <td data-label="소속업체">${r['소속업체']||'-'}</td>
+      <td data-label="배정호차/부">${r['현재배정호차']||'-'}${r['배정부(시간대)'] ? ' · '+r['배정부(시간대)'] : ''}</td>
+      <td data-label="채용일">${fmtDate(r['채용일'])}</td>
+      <td data-label="재직상태">${r['퇴사일'] ? `<span class="badge gray">퇴사(${fmtDate(r['퇴사일'])})</span>` : `<span class="badge green">재직중</span>`}</td>
+      <td data-label="범죄조회일">${fmtDate(r['범죄경력조회일'])}</td>
+      <td data-label="안전교육이수일">${fmtDate(r['안전교육이수일'])}</td>
+      <td data-label="급여">${r['급여']||'-'}</td>
+    </tr>`).join('')
+    : `<tr><td colspan="10" style="text-align:center;color:var(--muted);">조건에 맞는 인원이 없습니다.</td></tr>`;
+}
+
+document.querySelectorAll('#view-staff [data-role]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#view-staff [data-role]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    staffRoleFilter = btn.dataset.role;
+    renderStaff();
+  });
+});
+document.getElementById('staff-search').addEventListener('input', (e) => { staffSearchTerm = e.target.value.trim(); renderStaff(); });
+document.getElementById('staff-active-only').addEventListener('change', (e) => { staffActiveOnly = e.target.checked; renderStaff(); });
+
+/* ---------------- 차량·업체현황 ---------------- */
+function renderVehicleCompany(){
+  const allVehicles = state['차량']||[];
+  const companies = state['업체']||[];
+  const has = allVehicles.length > 0 || companies.length > 0;
+  document.getElementById('vehicle-empty').style.display = has ? 'none' : 'block';
+  document.getElementById('vehicle-content').style.display = has ? 'block' : 'none';
+  if(!has) return;
+
+  renderGenericBranchFilter('vehicle-branch-filter', vehicleBranchFilter, (b) => { vehicleBranchFilter = b; renderVehicleCompany(); });
+  const vehicles = vehicleBranchFilter === '전체' ? allVehicles : allVehicles.filter(v => branchFromRef(v['현재배정호차']) === vehicleBranchFilter);
+
+  current.vehicle = vehicles;
+  current.company = companies;
+  const activeVehicles = vehicles.filter(v => !v['폐차일']).length;
+
+  document.getElementById('vehicle-stats').innerHTML = `
+    <div class="stat-card"><div class="num">${vehicles.length}</div><div class="label">전체 차량</div></div>
+    <div class="stat-card"><div class="num">${activeVehicles}</div><div class="label">운행중 차량</div></div>
+    <div class="stat-card"><div class="num">${companies.length}</div><div class="label">전체 업체</div></div>
+  `;
+
+  document.getElementById('vehicle-body').innerHTML = vehicles.length ? vehicles.map(v => `
+    <tr>
+      <td data-label="차량번호">${vehicleLink(v['차량번호'])}</td>
+      <td data-label="차종">${v['차종']||'-'}</td>
+      <td data-label="인승">${v['인승']||'-'}</td>
+      <td data-label="연식">${v['연식']||'-'}</td>
+      <td data-label="소유형태"><span class="badge gray">${v['소유형태']||'-'}</span></td>
+      <td data-label="배정호차">${v['현재배정호차']||'-'}</td>
+      <td data-label="폐차여부">${v['폐차일'] ? `<span class="badge red">폐차(${fmtDate(v['폐차일'])})</span>` : `<span class="badge green">운행중</span>`}</td>
+    </tr>`).join('')
+    : `<tr><td colspan="7" style="text-align:center;color:var(--muted);">차량 자료 없음</td></tr>`;
+
+  document.getElementById('company-body').innerHTML = companies.length ? companies.map(c => `
+    <tr>
+      <td data-label="업체명">${c['업체명']||'-'}</td>
+      <td data-label="사업자등록번호">${c['사업자등록번호']||'-'}</td>
+      <td data-label="대표자">${c['대표자']||'-'}</td>
+      <td data-label="연락처">${c['연락처']||'-'}</td>
+    </tr>`).join('')
+    : `<tr><td colspan="4" style="text-align:center;color:var(--muted);">업체 자료 없음</td></tr>`;
+}
+
+/* ---------------- 이슈(운행예외) 관리 ---------------- */
+function renderIssue(){
+  let rows = [...(state['이슈']||[])].sort((a,b)=> (toDate(b['발생일'])||0) - (toDate(a['발생일'])||0));
+  const has = rows.length > 0;
+  document.getElementById('issue-empty').style.display = has ? 'none' : 'block';
+  document.getElementById('issue-content').style.display = has ? 'block' : 'none';
+  if(!has) return;
+
+  renderGenericBranchFilter('issue-branch-filter', issueBranchFilter, (b) => { issueBranchFilter = b; renderIssue(); });
+  if(issueBranchFilter !== '전체') rows = rows.filter(r => branchFromRef(r['호차']) === issueBranchFilter);
+  current.issue = rows;
+
+  const ongoing = rows.filter(r => !r['종료일']).length;
+  document.getElementById('issue-stats').innerHTML = `
+    <div class="stat-card"><div class="num">${rows.length}</div><div class="label">전체 이슈</div></div>
+    <div class="stat-card danger"><div class="num">${ongoing}</div><div class="label">진행중(미종료)</div></div>
+  `;
+
+  document.getElementById('issue-body').innerHTML = rows.map(r => `
+    <tr>
+      <td data-label="호차">${r['호차']||'-'}</td>
+      <td data-label="이슈종류"><span class="badge gray">${r['이슈종류']||'-'}</span></td>
+      <td data-label="발생일">${fmtDate(r['발생일'])}</td>
+      <td data-label="임시조치">${r['임시조치']||'-'}</td>
+      <td data-label="조치대상">${r['조치대상']||'-'}</td>
+      <td data-label="종료일">${r['종료일'] ? fmtDate(r['종료일']) : '-'}</td>
+      <td data-label="상태">${
+        r['종료일']
+          ? `<span class="badge green">종료됨</span>`
+          : `<span class="badge red">진행중</span> <button type="button" class="export-btn small resolve-issue-btn" data-idx="${state['이슈'].indexOf(r)}" style="margin-left:6px;">종료처리</button>`
+      }</td>
+    </tr>`).join('');
+
+  document.querySelectorAll('.resolve-issue-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx = Number(btn.dataset.idx);
+      btn.textContent = '처리 중...'; btn.disabled = true;
+      try{
+        state['이슈'][idx]['종료일'] = new Date().toISOString().slice(0,10);
+        await saveToServer();
+        renderIssue();
+      }catch(err){
+        console.error(err);
+        alert('서버 저장에 실패했습니다.');
+        btn.textContent = '종료처리'; btn.disabled = false;
+      }
+    });
+  });
+}
+
+/* ---------------- 정류장·학생현황 ---------------- */
+let stopUsageFilter = "전체";
+function renderStopStudent(){
+  const stops = state['정류장']||[];
+  const students = state['학생_기본정보']||[];
+  const has = stops.length > 0 || students.length > 0;
+  document.getElementById('stop-empty').style.display = has ? 'none' : 'block';
+  document.getElementById('stop-content').style.display = has ? 'block' : 'none';
+  if(!has) return;
+
+  renderGenericBranchFilter('stop-branch-filter', stopBranchFilter, (b) => { stopBranchFilter = b; renderStopStudent(); });
+
+  let rows = stops;
+  if(stopUsageFilter === "사용중") rows = rows.filter(s => s['사용상태'] === '사용중');
+  let studentRows = students;
+  if(stopBranchFilter !== '전체'){
+    rows = rows.filter(s => s['소속분원'] === stopBranchFilter);
+    studentRows = studentRows.filter(s => s['소속분원'] === stopBranchFilter);
+  }
+  current.stop = rows;
+  current.student = studentRows;
+
+  const inUse = stops.filter(s => s['사용상태'] === '사용중').length;
+  document.getElementById('stop-stats').innerHTML = `
+    <div class="stat-card"><div class="num">${rows.length}</div><div class="label">전체 정류장</div></div>
+    <div class="stat-card"><div class="num">${inUse}</div><div class="label">사용중 정류장</div></div>
+    <div class="stat-card"><div class="num">${studentRows.length}</div><div class="label">전체 학생</div></div>
+  `;
+
+  document.getElementById('stop-body').innerHTML = rows.length ? rows.map(s => `
+    <tr>
+      <td data-label="정류장명">${s['정류장명']||'-'}</td>
+      <td data-label="소속분원">${s['소속분원']||'-'}</td>
+      <td data-label="출처">${s['출처']||'-'}</td>
+      <td data-label="사용상태"><span class="badge ${s['사용상태']==='사용중'?'green':'gray'}">${s['사용상태']||'-'}</span></td>
+      <td data-label="등원">${s['등원포함여부']||'-'}</td>
+      <td data-label="하원">${s['하원포함여부']||'-'}</td>
+    </tr>`).join('')
+    : `<tr><td colspan="6" style="text-align:center;color:var(--muted);">조건에 맞는 정류장이 없습니다.</td></tr>`;
+
+  document.getElementById('student-body').innerHTML = studentRows.length ? studentRows.map(s => `
+    <tr>
+      <td data-label="학생명">${s['학생명']||'-'}</td>
+      <td data-label="소속분원">${s['소속분원']||'-'}</td>
+      <td data-label="왕복/편도">${s['왕복편도']||'-'}</td>
+      <td data-label="요일그룹">${s['요일그룹']||'-'}</td>
+      <td data-label="기본등원정류장">${s['기본등원정류장']||'-'}</td>
+      <td data-label="기본하원정류장">${s['기본하원정류장']||'-'}</td>
+    </tr>`).join('')
+    : `<tr><td colspan="6" style="text-align:center;color:var(--muted);">학생 자료 없음</td></tr>`;
+}
+
+document.querySelectorAll('#view-stop [data-usage]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#view-stop [data-usage]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    stopUsageFilter = btn.dataset.usage;
+    renderStopStudent();
+  });
+});
+
+/* ---------------- 변경이력 ---------------- */
+let logTypeFilter = "전체";
+let logSearchTerm = "";
+function renderChangeLog(){
+  const all = state.changeLog || [];
+  const has = all.length > 0;
+  document.getElementById('log-empty').style.display = has ? 'none' : 'block';
+  document.getElementById('log-content').style.display = has ? 'block' : 'none';
+  if(!has) return;
+
+  let rows = all;
+  if(logTypeFilter !== "전체") rows = rows.filter(r => r['구분'] === logTypeFilter);
+  if(logSearchTerm){
+    const t = logSearchTerm.toLowerCase();
+    rows = rows.filter(r => String(r['대상']||'').toLowerCase().includes(t));
+  }
+  current.log = rows;
+
+  const today = new Date().toISOString().slice(0,10);
+  const todayCount = all.filter(r => (r['시각']||'').slice(0,10) === today).length;
+  document.getElementById('log-stats').innerHTML = `
+    <div class="stat-card"><div class="num">${all.length}</div><div class="label">전체 수정 건수</div></div>
+    <div class="stat-card"><div class="num">${todayCount}</div><div class="label">오늘 수정 건수</div></div>
+  `;
+
+  document.getElementById('log-body').innerHTML = rows.length ? rows.map(r => `
+    <tr>
+      <td data-label="시각">${(r['시각']||'').replace('T',' ').slice(0,16)}</td>
+      <td data-label="구분"><span class="badge ${r['구분']==='기사'?'top':'gray'}">${r['구분']||'-'}</span></td>
+      <td data-label="대상">${r['대상']||'-'}</td>
+      <td data-label="항목">${r['항목']||'-'}</td>
+      <td data-label="변경전" style="color:var(--muted);text-decoration:line-through;">${r['변경전']||'-'}</td>
+      <td data-label="변경후" style="font-weight:700;">${r['변경후']||'-'}</td>
+    </tr>`).join('')
+    : `<tr><td colspan="6" style="text-align:center;color:var(--muted);">조건에 맞는 기록이 없습니다.</td></tr>`;
+}
+document.querySelectorAll('#view-log [data-logtype]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#view-log [data-logtype]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    logTypeFilter = btn.dataset.logtype;
+    renderChangeLog();
+  });
+});
+document.getElementById('log-search').addEventListener('input', (e) => { logSearchTerm = e.target.value.trim(); renderChangeLog(); });
+document.getElementById('log-export').addEventListener('click', ()=>{
+  exportExcel(current.log, '변경이력', '변경이력');
+});
+
+/* ---------------- 엑셀 내보내기 ---------------- */
+document.getElementById('hocha-export').addEventListener('click', ()=>{
+  exportExcel(current.hocha, '호차현황', '호차현황판');
+});
+document.getElementById('contract-export').addEventListener('click', ()=>{
+  exportExcel(current.contract, '계약현황', '계약관리');
+});
+document.getElementById('doc-top-export').addEventListener('click', ()=>{
+  exportExcel(current.docTop, '최상등급서류', '서류알림함_최상등급');
+});
+document.getElementById('doc-normal-export').addEventListener('click', ()=>{
+  exportExcel(current.docNormal, '일반서류', '서류알림함_일반');
+});
+document.getElementById('staff-export').addEventListener('click', ()=>{
+  exportExcel(current.staff, '기사동승자현황', '기사동승자현황');
+});
+document.getElementById('vehicle-export').addEventListener('click', ()=>{
+  exportExcel(current.vehicle, '차량현황', '차량현황');
+});
+document.getElementById('company-export').addEventListener('click', ()=>{
+  exportExcel(current.company, '업체현황', '업체현황');
+});
+
+/* ---------------- 신규 호차 등록 ---------------- */
+(function initHochaForm(){
+  const sel = document.getElementById('hochaFormBranch');
+  sel.innerHTML = BRANCHES.map(b => `<option value="${b}">${b}</option>`).join('');
+})();
+
+document.getElementById('hochaFormSubmit').addEventListener('click', async () => {
+  const no = document.getElementById('hochaFormNo').value.trim();
+  if(!no){ alert('호차번호를 입력해주세요.'); return; }
+  const record = {
+    '내부고유ID': genId('HOCHA'),
+    '호차번호': no,
+    '소속분원': document.getElementById('hochaFormBranch').value,
+    '개설일': new Date().toISOString().slice(0,10),
+    '폐지일': '',
+    '폐지사유': '',
+    '현재차량(차량번호)': document.getElementById('hochaFormCar').value.trim(),
+    '현재기사(이름)': document.getElementById('hochaFormDriver').value.trim(),
+    '현재동승자(이름)': document.getElementById('hochaFormAttendant').value.trim(),
+    '현재업체': document.getElementById('hochaFormCompany').value.trim(),
+    '비고': '',
+  };
+  const btn = document.getElementById('hochaFormSubmit');
+  await submitAndSave(btn, () => {
+    state['호차'] = state['호차'] || [];
+    state['호차'].push(record);
+    syncAliases();
+  });
+  ['hochaFormNo','hochaFormCar','hochaFormDriver','hochaFormAttendant','hochaFormCompany']
+    .forEach(id => document.getElementById(id).value = '');
+  renderHocha();
+});
+
+/* ---------------- 신규 계약 등록 ---------------- */
+document.getElementById('contractFormSubmit').addEventListener('click', async () => {
+  const hocha = document.getElementById('contractFormHocha').value.trim();
+  const company = document.getElementById('contractFormCompany').value.trim();
+  if(!hocha || !company){ alert('호차와 업체명을 입력해주세요.'); return; }
+  const record = {
+    '내부고유ID': genId('CT'),
+    '호차': hocha,
+    '업체': company,
+    '계약시작일': document.getElementById('contractFormStart').value,
+    '계약종료일': document.getElementById('contractFormEnd').value,
+    '급여': document.getElementById('contractFormPay').value.trim(),
+    '운행횟수': document.getElementById('contractFormTrips').value.trim(),
+    '운행지역': document.getElementById('contractFormArea').value.trim(),
+    '위약조항': document.getElementById('contractFormPenalty').value.trim(),
+    '보험의무': document.getElementById('contractFormInsurance').value.trim(),
+    '정비의무': document.getElementById('contractFormMaint').value.trim(),
+    '계약서': '',
+    '갱신여부': document.getElementById('contractFormRenewal').value,
+  };
+  if(!record['계약종료일']){ alert('계약종료일을 입력해주세요 (만료 알림 계산에 필요합니다).'); return; }
+  const btn = document.getElementById('contractFormSubmit');
+  await submitAndSave(btn, () => {
+    state['계약'] = state['계약'] || [];
+    state['계약'].push(record);
+    syncAliases();
+  });
+  ['contractFormHocha','contractFormCompany','contractFormStart','contractFormEnd','contractFormPay',
+   'contractFormTrips','contractFormArea','contractFormPenalty','contractFormInsurance','contractFormMaint']
+    .forEach(id => document.getElementById(id).value = '');
+  renderContract();
+});
+
+/* ---------------- 신규 서류 등록 ---------------- */
+const DOC_TYPES = ["범죄경력조회","안전교육확인증","통학버스신고필증","계약서","보험증서","차량등록증","통장사본","신분증사본","등본","사업자등록증"];
+const DOC_GRADE = {
+  "범죄경력조회":"최상", "안전교육확인증":"최상", "통학버스신고필증":"최상",
+  "계약서":"상", "보험증서":"상",
+  "차량등록증":"하", "통장사본":"하", "신분증사본":"하", "등본":"하", "사업자등록증":"하",
+};
+(function initDocForm(){
+  const sel = document.getElementById('docFormType');
+  sel.innerHTML = DOC_TYPES.map(t => `<option value="${t}">${t} (${DOC_GRADE[t]})</option>`).join('');
+})();
+
+document.getElementById('docFormSubmit').addEventListener('click', async () => {
+  const target = document.getElementById('docFormTarget').value.trim();
+  if(!target){ alert('대상을 입력해주세요.'); return; }
+  const docType = document.getElementById('docFormType').value;
+  const record = {
+    '서류종류': docType,
+    '소속대상유형': document.getElementById('docFormTargetType').value,
+    '소속대상(ID/이름)': target,
+    '발급일': document.getElementById('docFormIssued').value,
+    '만료일': document.getElementById('docFormExpires').value,
+    '재발급사유': document.getElementById('docFormReissueReason').value.trim(),
+    '파일(링크)': '',
+    '상태': document.getElementById('docFormStatus').value,
+    '관리등급': DOC_GRADE[docType],
+  };
+  const btn = document.getElementById('docFormSubmit');
+  await submitAndSave(btn, () => {
+    state['서류'] = state['서류'] || [];
+    state['서류'].push(record);
+    syncAliases();
+  });
+  ['docFormTarget','docFormIssued','docFormExpires','docFormReissueReason']
+    .forEach(id => document.getElementById(id).value = '');
+  renderDoc();
+});
+
+/* ---------------- 신규 이슈 등록 ---------------- */
+document.getElementById('issueFormSubmit').addEventListener('click', async () => {
+  const hocha = document.getElementById('issueFormHocha').value.trim();
+  if(!hocha){ alert('호차를 입력해주세요.'); return; }
+  const record = {
+    '이슈ID': genId('ISS'),
+    '호차': hocha,
+    '이슈종류': document.getElementById('issueFormType').value,
+    '발생일': document.getElementById('issueFormDate').value || new Date().toISOString().slice(0,10),
+    '임시조치': document.getElementById('issueFormAction').value.trim(),
+    '조치대상': document.getElementById('issueFormTarget').value.trim(),
+    '종료일': '',
+  };
+  const btn = document.getElementById('issueFormSubmit');
+  await submitAndSave(btn, () => {
+    state['이슈'] = state['이슈'] || [];
+    state['이슈'].push(record);
+  });
+  ['issueFormHocha','issueFormAction','issueFormTarget']
+    .forEach(id => document.getElementById(id).value = '');
+  renderIssue();
+});
+
+/* ---------------- 신규 등록 폼 (직접입력) ---------------- */
+function genId(prefix){
+  return prefix + '-' + Date.now().toString(36).toUpperCase();
+}
+
+async function submitAndSave(btn, doAppend){
+  const original = btn.textContent;
+  btn.textContent = '등록 중...'; btn.disabled = true;
+  try{
+    doAppend();
+    await saveToServer();
+  }catch(err){
+    console.error(err);
+    alert('서버 저장에 실패했습니다. 콘솔을 확인해주세요.');
+  }finally{
+    btn.textContent = original; btn.disabled = false;
+  }
+}
+
+document.getElementById('staffFormSubmit').addEventListener('click', async () => {
+  const role = document.getElementById('staffFormRole').value;
+  const name = document.getElementById('staffFormName').value.trim();
+  if(!name){ alert('이름을 입력해주세요.'); return; }
+  const record = {
+    '내부고유ID': genId(role === '기사' ? 'DRV' : 'ATT'),
+    '이름': name,
+    '연락처': document.getElementById('staffFormPhone').value.trim(),
+    '소속업체': document.getElementById('staffFormCompany').value.trim(),
+    '현재배정호차': document.getElementById('staffFormHocha').value.trim(),
+    '채용일': document.getElementById('staffFormHireDate').value,
+    '퇴사일': '',
+    '범죄경력조회일': document.getElementById('staffFormCrimeCheck').value,
+    '안전교육이수일': document.getElementById('staffFormEduDate').value,
+    '인력구분': document.getElementById('staffFormType').value,
+    '급여': document.getElementById('staffFormPay').value.trim(),
+    '비고': '',
+  };
+  const btn = document.getElementById('staffFormSubmit');
+  await submitAndSave(btn, () => {
+    const key = role === '기사' ? '기사' : '동승자';
+    state[key] = state[key] || [];
+    state[key].push(record);
+    syncAliases();
+  });
+  ['staffFormName','staffFormPhone','staffFormCompany','staffFormHocha','staffFormHireDate','staffFormCrimeCheck','staffFormEduDate','staffFormPay']
+    .forEach(id => document.getElementById(id).value = '');
+  renderStaff();
+});
+
+document.getElementById('vehicleFormSubmit').addEventListener('click', async () => {
+  const no = document.getElementById('vehicleFormNo').value.trim();
+  if(!no){ alert('차량번호를 입력해주세요.'); return; }
+  const record = {
+    '내부고유ID': genId('CAR'),
+    '차량번호': no,
+    '차종': document.getElementById('vehicleFormType').value.trim(),
+    '인승': document.getElementById('vehicleFormSeats').value.trim(),
+    '연식': document.getElementById('vehicleFormYear').value.trim(),
+    '소유형태': document.getElementById('vehicleFormOwn').value,
+    '등록일': new Date().toISOString().slice(0,10),
+    '폐차일': '',
+    '현재배정호차': document.getElementById('vehicleFormHocha').value.trim(),
+    '비고': '',
+  };
+  const btn = document.getElementById('vehicleFormSubmit');
+  await submitAndSave(btn, () => {
+    state['차량'] = state['차량'] || [];
+    state['차량'].push(record);
+    syncAliases();
+  });
+  ['vehicleFormNo','vehicleFormType','vehicleFormSeats','vehicleFormYear','vehicleFormHocha']
+    .forEach(id => document.getElementById(id).value = '');
+  renderVehicleCompany();
+});
+
+document.getElementById('companyFormSubmit').addEventListener('click', async () => {
+  const name = document.getElementById('companyFormName').value.trim();
+  if(!name){ alert('업체명을 입력해주세요.'); return; }
+  const record = {
+    '내부고유ID': genId('CO'),
+    '업체명': name,
+    '사업자등록번호': document.getElementById('companyFormBizNo').value.trim(),
+    '대표자': document.getElementById('companyFormCeo').value.trim(),
+    '연락처': document.getElementById('companyFormPhone').value.trim(),
+    '사업자등록증': '',
+    '비고': '',
+  };
+  const btn = document.getElementById('companyFormSubmit');
+  await submitAndSave(btn, () => {
+    state['업체'] = state['업체'] || [];
+    state['업체'].push(record);
+    syncAliases();
+  });
+  ['companyFormName','companyFormBizNo','companyFormCeo','companyFormPhone']
+    .forEach(id => document.getElementById(id).value = '');
+  renderVehicleCompany();
+});
+document.getElementById('issue-export').addEventListener('click', ()=>{
+  exportExcel(current.issue, '이슈현황', '이슈관리');
+});
+document.getElementById('stop-export').addEventListener('click', ()=>{
+  exportExcel(current.stop, '정류장현황', '정류장현황');
+});
+document.getElementById('student-export').addEventListener('click', ()=>{
+  exportExcel(current.student, '학생현황', '학생현황');
+});
+document.getElementById('doc-all-export').addEventListener('click', ()=>{
+  const combined = [
+    ...current.docTop.map(r => ({...r, 등급:'⭐최상'})),
+    ...current.docNormal.map(r => ({...r, 등급:'일반'})),
+  ];
+  exportExcel(combined, '전체서류', '서류알림함_전체');
+});
+</script>
+</body>
+</html>

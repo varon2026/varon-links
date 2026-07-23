@@ -1,1 +1,934 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>바론링크 | 관리대장 색인</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<style>
+  :root{
+    --paper: #F2EFE6;
+    --paper-dim: #EAE6D9;
+    --ink: #20262B;
+    --ink-soft: #5B6470;
+    --ink-faint: #93998F;
+    --line: #D9D3C1;
+    --navy: #23262B;
+    --stamp: #A9790E;
+    --brass: #A9790E;
+    --card: #FCFBF7;
+    --radius: 3px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:
+      radial-gradient(circle at 100% 0%, #FFFFFF60, transparent 40%),
+      var(--paper);
+    color:var(--ink);
+    font-family:'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  .wrap{
+    max-width:860px;
+    margin:0 auto;
+    padding:56px 24px 120px;
+  }
 
+  /* ---------- Header ---------- */
+  header{
+    margin-bottom:40px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:28px;
+  }
+  .eyebrow{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    letter-spacing:.12em;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    margin-bottom:14px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:16px; height:1px;
+    background:var(--stamp);
+    display:inline-block;
+  }
+  .brandmark{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:18px;
+  }
+  .logo-box{
+    width:34px; height:34px;
+    background:var(--navy);
+    border-radius:5px;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .logo-box svg{ width:17px; height:23px; }
+  .title-row{
+    display:flex;
+    align-items:baseline;
+    gap:2px;
+  }
+  h1{
+    font-family:'Pretendard', sans-serif;
+    font-weight:800;
+    font-size:42px;
+    letter-spacing:-0.03em;
+    margin:0;
+    color:var(--ink);
+  }
+  .sub{
+    font-size:15px;
+    color:var(--ink-soft);
+    margin:0 0 26px;
+    line-height:1.6;
+  }
+  .search{
+    position:relative;
+    max-width:420px;
+  }
+  .search input{
+    width:100%;
+    padding:12px 14px 12px 38px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--card);
+    font-family:'Pretendard', sans-serif;
+    font-size:14px;
+    color:var(--ink);
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  .search input:focus{ border-color:var(--stamp); }
+  .search svg{
+    position:absolute; left:12px; top:50%;
+    transform:translateY(-50%);
+    width:15px; height:15px;
+    stroke:var(--ink-faint);
+  }
+
+  /* ---------- Branch cards ---------- */
+  #branches{ display:flex; flex-direction:column; gap:22px; }
+
+  .branch-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+    box-shadow:0 1px 0 rgba(32,38,43,0.02);
+  }
+
+  .branch-head{
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:16px 20px;
+    background:
+      linear-gradient(180deg, #FFFFFF, #FBF9F4);
+    border-bottom:1px solid var(--line);
+    cursor:pointer;
+    user-select:none;
+  }
+  .branch-head::before{
+    content:"";
+    position:absolute;
+    left:0; top:0; bottom:0;
+    width:4px;
+    background:var(--brass);
+    opacity:.55;
+  }
+  .branch-title{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+  }
+  .branch-title h2{
+    font-family:'Pretendard', sans-serif;
+    font-weight:700;
+    font-size:19px;
+    letter-spacing:-0.02em;
+    margin:0;
+    color:var(--ink);
+  }
+  .branch-count{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--ink-faint);
+  }
+  .chevron{
+    width:14px; height:14px;
+    stroke:var(--ink-soft);
+    transition:transform .2s ease;
+    flex-shrink:0;
+  }
+  .branch-card.open .chevron{ transform:rotate(180deg); }
+
+  /* 준비중 배지 */
+  .soon-badge{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    letter-spacing:.06em;
+    color:var(--ink-faint);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:3px 9px;
+    flex-shrink:0;
+  }
+  a.doc-row.disabled{
+    color:var(--ink-faint);
+    cursor:default;
+    pointer-events:none;
+  }
+  a.doc-row.disabled .doc-title{ color:var(--ink-faint); }
+  .branch-head.disabled{ cursor:default; }
+  .branch-head.disabled .branch-title h2{ color:var(--ink-faint); }
+
+  /* 바로가기(단일 링크) 카드: chevron 없이 카드 전체가 링크 */
+  a.branch-head-link{
+    text-decoration:none;
+    color:inherit;
+    display:flex;
+  }
+
+  .doc-list{
+    display:grid;
+    grid-template-rows:0fr;
+    transition:grid-template-rows .22s ease;
+  }
+  .branch-card.open .doc-list{ grid-template-rows:1fr; }
+  .doc-list-inner{ overflow:hidden; }
+
+  a.doc-row{
+    position:relative;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:14px 20px;
+    text-decoration:none;
+    color:var(--ink);
+    border-top:1px solid var(--line);
+  }
+  a.doc-row:first-child{ border-top:none; }
+  a.doc-row:hover{ background:var(--paper-dim); }
+  a.doc-row:hover .doc-title{ color:var(--stamp); }
+
+  .doc-icon{
+    width:30px; height:30px;
+    flex-shrink:0;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--paper-dim);
+    border:1px solid var(--line);
+  }
+  .doc-icon svg{ width:15px; height:15px; stroke:var(--ink-soft); }
+
+  .doc-text{ flex:1; min-width:0; }
+  .doc-title{
+    font-size:14.5px;
+    font-weight:600;
+    color:var(--ink);
+    transition:color .12s ease;
+  }
+  .doc-cat{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--ink-faint);
+    margin-top:2px;
+  }
+
+  .go{
+    width:24px; height:24px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .go svg{ width:11px; height:11px; stroke:var(--ink-soft); }
+
+  /* stamp micro-interaction */
+  .stamp-mark{
+    position:absolute;
+    right:20px; top:50%;
+    width:38px; height:38px;
+    margin-top:-19px;
+    border:2px solid var(--stamp);
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--stamp);
+    font-family:'Pretendard', sans-serif;
+    font-weight:800;
+    font-size:10px;
+    letter-spacing:-0.03em;
+    opacity:0;
+    transform:scale(1.6) rotate(-14deg);
+    pointer-events:none;
+    transition:opacity .28s ease, transform .28s cubic-bezier(.2,.8,.3,1.2);
+  }
+  a.doc-row:active .stamp-mark{
+    opacity:.9;
+    transform:scale(1) rotate(-14deg);
+  }
+
+  /* ---------- States ---------- */
+  #status{
+    padding:40px 20px;
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:14px;
+    border:1px dashed var(--line);
+    border-radius:var(--radius);
+  }
+  #status.error{ color:var(--stamp); }
+  #status button{
+    margin-top:14px;
+    padding:8px 16px;
+    border:1px solid var(--ink);
+    background:none;
+    border-radius:var(--radius);
+    font-family:'Pretendard', sans-serif;
+    font-size:13px;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  #status button:hover{ background:var(--ink); color:var(--paper); }
+
+  .no-match{
+    text-align:center;
+    padding:32px;
+    color:var(--ink-faint);
+    font-size:13px;
+    display:none;
+  }
+
+  footer{
+    margin-top:56px;
+    padding-top:18px;
+    border-top:1px solid var(--line);
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--ink-faint);
+    display:flex;
+    justify-content:space-between;
+  }
+
+  @media (max-width:520px){
+    .wrap{ padding:36px 16px 90px; }
+    h1{ font-size:32px; }
+    .branch-head{ padding:14px 16px; }
+    a.doc-row{ padding:13px 16px; }
+    .stamp-mark{ display:none; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; }
+  }
+
+  /* ---------- 관리자 순서 편집 모드 ---------- */
+  .reorder-toggle-btn{
+    margin-top:14px;
+    padding:8px 16px;
+    border:1px solid var(--line);
+    background:var(--card);
+    border-radius:var(--radius);
+    font-family:'Pretendard', sans-serif;
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .reorder-toggle-btn:hover{ border-color:var(--stamp); color:var(--stamp); }
+  .reorder-toggle-btn.active{ background:var(--navy); color:#fff; border-color:var(--navy); }
+
+  body.reorder-mode .branch-head{ cursor:grab; }
+  body.reorder-mode a.branch-head-link{ pointer-events:none; }
+  body.reorder-mode .branch-card{ position:relative; }
+  body.reorder-mode .branch-card::before{
+    content:"⠿";
+    position:absolute;
+    left:-26px; top:50%; transform:translateY(-50%);
+    color:var(--ink-faint);
+    font-size:16px;
+  }
+  .branch-card.dragging{ opacity:.4; }
+  .branch-card.drag-over{ outline:2px dashed var(--stamp); outline-offset:2px; }
+
+  .reorder-bar{
+    display:none;
+    position:fixed;
+    left:0; right:0; bottom:0;
+    background:var(--navy);
+    color:#fff;
+    padding:14px 24px;
+    align-items:center;
+    justify-content:center;
+    gap:16px;
+    font-family:'Pretendard', sans-serif;
+    font-size:13px;
+    z-index:50;
+  }
+  .reorder-bar.active{ display:flex; }
+  .reorder-bar button{
+    padding:8px 18px;
+    border-radius:var(--radius);
+    border:none;
+    font-family:'Pretendard', sans-serif;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .reorder-bar .save-btn{ background:var(--brass); color:#1a1a1a; }
+  .reorder-bar .cancel-btn{ background:transparent; color:#fff; border:1px solid rgba(255,255,255,.4); }
+
+  .hide-toggle{
+    display:inline-block;
+    margin:8px 0 10px 16px;
+    padding:5px 12px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    font-family:'Pretendard', sans-serif;
+    font-size:11px;
+    font-weight:700;
+    cursor:pointer;
+    color:var(--ink-soft);
+    pointer-events:auto;
+  }
+  .hide-toggle.is-hidden{ background:#FDECEC; color:var(--stamp); border-color:var(--stamp); }
+  body.reorder-mode .branch-card.category-hidden{ opacity:.45; }
+  body.reorder-mode .branch-card.category-hidden .branch-head{ background:#F5F5F3; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">바론네트웍스 · 총무팀</div>
+    <div class="brandmark">
+      <div class="logo-box">
+        <svg viewBox="0 0 20 28" fill="none"><path d="M13 0H20L7 28H0L13 0Z" fill="#D9A62E"/></svg>
+      </div>
+      <div class="title-row"><h1>바론링크</h1></div>
+    </div>
+    <p class="sub">항목을 클릭하면 해당 대장/앱으로 이동합니다. 앱 접속 권한이 필요하신 분은 총무팀으로 문의해주세요.</p>
+    <div class="search" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" placeholder="대장 이름 또는 분원명 검색 (예: 남동탄, 셔틀)">
+    </div>
+    <button id="reorderToggleBtn" class="reorder-toggle-btn">⚙ 관리자 설정</button>
+  </header>
+
+  <div id="status">색인을 불러오는 중입니다…</div>
+  <div id="branches" style="display:none;"></div>
+  <div class="no-match" id="noMatch">검색 결과가 없습니다.</div>
+
+  <footer>
+    <span>VARON-LINKS</span>
+    <span id="countLabel"></span>
+  </footer>
+</div>
+
+<div class="reorder-bar" id="reorderBar">
+  <span>드래그로 순서를 바꾸거나, 카드 아래 '👁 노출 중' 배지를 눌러 숨길 수 있습니다</span>
+  <span id="visitCountDisplay" style="font-weight:700;">접속 횟수 불러오는 중...</span>
+  <button class="cancel-btn" id="reorderCancelBtn">취소</button>
+  <button class="save-btn" id="reorderSaveBtn">변경사항 저장</button>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://fauzcprystmkbvvxysdi.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhdXpjcHJ5c3Rta2J2dnh5c2RpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4OTg0NDcsImV4cCI6MjA5ODQ3NDQ0N30.4B6Blhi_QEaf_fk465M2oLIytbE81ShTwPe-ZRU1-BQ';
+
+const iconPaths = {
+  '시설': '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  '청소': '<path d="M3 21l6-6M14 3l7 7-8.5 8.5a4.95 4.95 0 1 1-7-7L14 3z"/>',
+  '셔틀': '<rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="7.5" cy="19" r="1.5"/><circle cx="16.5" cy="19" r="1.5"/><path d="M3 12h18"/>',
+  '소모품': '<path d="M21 8L12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+  '강사': '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2"/>',
+  '교습비': '<rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/><path d="M6 6V4h12v2"/>',
+  '노선': '<path d="M9 20l-5-2V6l5 2m0 12l6-2m-6 2V8m6 10l5 2V8l-5-2m0 12V6m0 0L9 8"/>',
+  'default': '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h5"/>'
+};
+function iconFor(category){
+  for(const key in iconPaths){
+    if(category && category.includes(key)) return iconPaths[key];
+  }
+  return iconPaths.default;
+}
+
+// 카테고리 표시 순서 / 라벨 재정의 / 유형(단일링크 vs 분원별펼치기) 고정
+const CATEGORY_ORDER = ['시설관리대장','청소관리대장','셔틀현황','소모품관리대장','강사채용해임현황','교습비등록현황','노선최적화앱'];
+const CATEGORY_LABELS = { '셔틀현황':'셔틀운영대시보드' };
+const CATEGORY_TYPE = {
+  '시설관리대장':'simple',
+  '청소관리대장':'simple',
+  '셔틀현황':'simple',
+  '소모품관리대장':'simple',
+  '강사채용해임현황':'simple',
+  '교습비등록현황':'simple',
+  '노선최적화앱':'expandable',
+  '분원정보·계정관리':'simple',
+  '차량·기사 서류정비 진행관리':'simple',
+};
+
+const statusEl = document.getElementById('status');
+const branchesEl = document.getElementById('branches');
+const noMatchEl = document.getElementById('noMatch');
+const countLabel = document.getElementById('countLabel');
+const searchInput = document.getElementById('searchInput');
+
+let allRows = [];
+
+async function loadLinks(){
+  statusEl.style.display = 'block';
+  statusEl.className = '';
+  statusEl.textContent = '색인을 불러오는 중입니다…';
+  branchesEl.style.display = 'none';
+
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/links?select=*&order=sort_order.asc`, {
+      cache: 'no-store',
+      headers:{
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Cache-Control': 'no-cache'
+      }
+    });
+    if(!res.ok) throw new Error('요청 실패: ' + res.status);
+    const data = await res.json();
+    if(!Array.isArray(data) || data.length === 0){
+      statusEl.textContent = '등록된 링크가 없습니다. Supabase의 links 테이블에 데이터를 추가해주세요.';
+      return;
+    }
+    allRows = data;
+    render(allRows);
+    statusEl.style.display = 'none';
+    branchesEl.style.display = 'flex';
+  }catch(err){
+    statusEl.className = 'error';
+    statusEl.innerHTML = '색인을 불러오지 못했습니다.<br>' + '네트워크 상태를 확인하거나 잠시 후 다시 시도해주세요.';
+    const btn = document.createElement('button');
+    btn.textContent = '다시 시도';
+    btn.onclick = loadLinks;
+    statusEl.appendChild(btn);
+    console.error(err);
+  }
+}
+
+function groupByCategory(rows){
+  const map = {};
+  rows.forEach(r=>{
+    if(!map[r.category]) map[r.category] = [];
+    map[r.category].push(r);
+  });
+  // 카테고리 순서는 각 카테고리에 속한 행들의 sort_order 최솟값 기준으로 정렬한다
+  // (시트에서 sort_order 숫자만 바꾸면 화면 순서도 그대로 바뀐다)
+  const categories = Object.keys(map).sort((a, b) => {
+    const minA = Math.min(...map[a].map(r => Number(r.sort_order ?? 9999)));
+    const minB = Math.min(...map[b].map(r => Number(r.sort_order ?? 9999)));
+    return minA - minB;
+  });
+  return categories.map(c => ({ category:c, items:map[c] }));
+}
+
+function render(rows){
+  const groups = groupByCategory(rows);
+  branchesEl.innerHTML = '';
+  const totalLinks = rows.filter(r => r.url).length;
+  countLabel.textContent = totalLinks + ' LINKS · ' + groups.length + ' CATEGORIES';
+
+  groups.forEach(g => {
+    const type = CATEGORY_TYPE[g.category] || (g.items.length > 1 ? 'expandable' : 'simple');
+    const label = CATEGORY_LABELS[g.category] || g.category;
+    const isHidden = g.items.length > 0 && g.items.every(it => it.hidden === true);
+
+    if(!reorderMode && isHidden) return; // 일반 화면에서는 숨김 카테고리 자체를 노출하지 않음
+
+    const card = document.createElement('div');
+    card.className = 'branch-card' + (isHidden ? ' category-hidden' : '');
+    card.dataset.category = g.category;
+
+    const hideToggle = reorderMode ? (() => {
+      const btn = document.createElement('button');
+      btn.className = 'hide-toggle' + (isHidden ? ' is-hidden' : '');
+      btn.textContent = isHidden ? '🚫 숨김' : '👁 노출 중';
+      btn.type = 'button';
+      btn.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const nowHidden = pendingHidden[g.category] === undefined ? isHidden : pendingHidden[g.category];
+        pendingHidden[g.category] = !nowHidden;
+        card.classList.toggle('category-hidden', pendingHidden[g.category]);
+        btn.classList.toggle('is-hidden', pendingHidden[g.category]);
+        btn.textContent = pendingHidden[g.category] ? '🚫 숨김' : '👁 노출 중';
+      });
+      return btn;
+    })() : null;
+
+    if(type === 'simple'){
+      // 단일 링크: 대표 URL 하나만 사용 (여러 행이 있어도 첫 번째 유효 url 사용)
+      const target = g.items.find(it => it.url);
+      const searchText = (label + ' ' + g.items.map(it=>it.title||'').join(' ')).toLowerCase();
+
+      if(!target){
+        card.innerHTML = `
+          <div class="branch-head disabled">
+            <div class="branch-title">
+              <div class="doc-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${iconFor(g.category)}</svg></div>
+              <h2>${label}</h2>
+            </div>
+            <span class="soon-badge">준비중</span>
+          </div>`;
+        card.dataset.search = searchText;
+      }else{
+        const a = document.createElement('a');
+        a.className = 'branch-head branch-head-link';
+        a.href = target.url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.dataset.search = searchText;
+        a.innerHTML = `
+          <div class="branch-title">
+            <div class="doc-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${iconFor(g.category)}</svg></div>
+            <h2>${label}</h2>
+          </div>
+          <div class="go"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+        `;
+        card.appendChild(a);
+        card.dataset.search = searchText;
+      }
+      if(hideToggle) card.appendChild(hideToggle);
+      branchesEl.appendChild(card);
+      return;
+    }
+
+    // expandable: 분원별로 펼쳐서 선택
+    const head = document.createElement('div');
+    head.className = 'branch-head';
+    const availableCount = g.items.filter(it => it.url).length;
+    head.innerHTML = `
+      <div class="branch-title">
+        <div class="doc-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${iconFor(g.category)}</svg></div>
+        <h2>${label}</h2>
+        <span class="branch-count">${availableCount}/${g.items.length}건</span>
+      </div>
+      <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+    `;
+    head.addEventListener('click', () => card.classList.toggle('open'));
+
+    const list = document.createElement('div');
+    list.className = 'doc-list';
+    const inner = document.createElement('div');
+    inner.className = 'doc-list-inner';
+
+    g.items.forEach(item => {
+      const row = document.createElement('a');
+      const hasUrl = !!item.url;
+      row.className = 'doc-row' + (hasUrl ? '' : ' disabled');
+      row.href = hasUrl ? item.url : '#';
+      if(hasUrl){ row.target = '_blank'; row.rel = 'noopener noreferrer'; }
+      row.dataset.search = (g.category + ' ' + label + ' ' + item.branch + ' ' + (item.title||'')).toLowerCase();
+      row.innerHTML = `
+        <div class="doc-text">
+          <div class="doc-title">${item.branch}</div>
+        </div>
+        ${hasUrl
+          ? `<div class="go"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M7 7h10v10"/></svg></div><div class="stamp-mark">열람<br>완료</div>`
+          : `<span class="soon-badge">준비중</span>`}
+      `;
+      inner.appendChild(row);
+    });
+
+    list.appendChild(inner);
+    card.appendChild(head);
+    card.appendChild(list);
+    if(hideToggle) card.appendChild(hideToggle);
+    card.dataset.search = (label + ' ' + g.items.map(it=>it.branch).join(' ')).toLowerCase();
+    branchesEl.appendChild(card);
+  });
+}
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim().toLowerCase();
+  let visibleCards = 0;
+
+  document.querySelectorAll('.branch-card').forEach(card => {
+    const rows = card.querySelectorAll('.doc-row');
+    if(rows.length > 0){
+      // expandable 카드: 하위 분원 항목 단위로 필터링
+      let branchMatches = 0;
+      rows.forEach(row => {
+        const match = !q || row.dataset.search.includes(q);
+        row.style.display = match ? 'flex' : 'none';
+        if(match) branchMatches++;
+      });
+      const show = branchMatches > 0;
+      card.style.display = show ? 'block' : 'none';
+      if(show){
+        visibleCards++;
+        if(q) card.classList.add('open');
+      }
+    }else{
+      // simple 카드: 카드 자체를 검색어와 비교
+      const match = !q || (card.dataset.search || '').includes(q);
+      card.style.display = match ? 'block' : 'none';
+      if(match) visibleCards++;
+    }
+  });
+
+  noMatchEl.style.display = (visibleCards === 0) ? 'block' : 'none';
+});
+
+/* ---------------- 관리자 순서 편집 모드 ---------------- */
+const ADMIN_PASSWORD = "5555";
+let reorderMode = false;
+let draggedCard = null;
+let pendingHidden = {};
+
+/* ---------------- 접속 횟수 카운터 (전체 열람 횟수 + 실사용자 수 추정) ---------------- */
+let totalVisits = null;
+let uniqueVisitors = null;
+
+function getOrCreateVisitorId(){
+  let id = localStorage.getItem('baronlink_visitor_id');
+  if(!id){
+    id = 'v_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem('baronlink_visitor_id', id);
+  }
+  return id;
+}
+
+async function trackVisit(){
+  try{
+    // 1) 전체 열람 횟수 +1
+    const getRes = await fetch(`${SUPABASE_URL}/rest/v1/page_stats?select=value&key=eq.total_visits`, {
+      headers:{ apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+    if(getRes.ok){
+      const rows = await getRes.json();
+      const current = (Array.isArray(rows) && rows.length > 0) ? Number(rows[0].value) || 0 : 0;
+      const next = current + 1;
+      await fetch(`${SUPABASE_URL}/rest/v1/page_stats`, {
+        method: 'POST',
+        headers:{
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({ key: 'total_visits', value: next })
+      });
+      totalVisits = next;
+    }
+
+    // 2) 이 브라우저(기기)의 방문 기록 남기기 (실사용자 수 추정용)
+    const visitorId = getOrCreateVisitorId();
+    const nowIso = new Date().toISOString();
+    const visitorRes = await fetch(`${SUPABASE_URL}/rest/v1/page_visitors?select=visit_count&visitor_id=eq.${visitorId}`, {
+      headers:{ apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+    if(visitorRes.ok){
+      const vRows = await visitorRes.json();
+      const prevCount = (Array.isArray(vRows) && vRows.length > 0) ? Number(vRows[0].visit_count) || 0 : 0;
+      await fetch(`${SUPABASE_URL}/rest/v1/page_visitors`, {
+        method: 'POST',
+        headers:{
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({
+          visitor_id: visitorId,
+          visit_count: prevCount + 1,
+          last_seen: nowIso,
+          first_seen: prevCount === 0 ? nowIso : undefined,
+        })
+      });
+    }
+
+    // 3) 전체 고유 방문자 수 조회 (count=exact 헤더로 행 개수만 가볍게 받아옴)
+    const countRes = await fetch(`${SUPABASE_URL}/rest/v1/page_visitors?select=visitor_id`, {
+      headers:{
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Prefer': 'count=exact',
+        'Range': '0-0'
+      }
+    });
+    if(countRes.ok){
+      const range = countRes.headers.get('content-range'); // 예: "0-0/17"
+      if(range && range.includes('/')){
+        const total = range.split('/')[1];
+        if(total && total !== '*') uniqueVisitors = Number(total);
+      }
+    }
+
+    updateVisitDisplay();
+  }catch(err){ /* 통계 실패는 무시하고 페이지는 정상 작동 */ }
+}
+function updateVisitDisplay(){
+  const el = document.getElementById('visitCountDisplay');
+  if(!el) return;
+  const parts = [];
+  parts.push(totalVisits === null ? '열람 횟수 불러오는 중...' : `누적 열람 횟수: ${totalVisits.toLocaleString()}회`);
+  parts.push(uniqueVisitors === null ? '실사용자 수 불러오는 중...' : `실사용자 수(추정): ${uniqueVisitors.toLocaleString()}명`);
+  el.textContent = parts.join('   ·   ');
+}
+
+const reorderToggleBtn = document.getElementById('reorderToggleBtn');
+const reorderBar = document.getElementById('reorderBar');
+
+reorderToggleBtn.addEventListener('click', () => {
+  if(reorderMode) return; // 편집 중엔 하단 바의 저장/취소로만 종료
+  const pw = prompt('관리자 비밀번호를 입력하세요');
+  if(pw === null) return;
+  if(pw !== ADMIN_PASSWORD){
+    alert('비밀번호가 올바르지 않습니다.');
+    return;
+  }
+  enterReorderMode();
+});
+
+function enterReorderMode(){
+  reorderMode = true;
+  pendingHidden = {};
+  document.body.classList.add('reorder-mode');
+  reorderToggleBtn.classList.add('active');
+  reorderBar.classList.add('active');
+  searchInput.value = '';
+  render(allRows); // 검색 필터 해제한 전체 목록으로 다시 렌더링 (숨김 카테고리도 함께 표시)
+  makeCardsDraggable();
+  updateVisitDisplay();
+}
+
+function exitReorderMode(){
+  reorderMode = false;
+  pendingHidden = {};
+  document.body.classList.remove('reorder-mode');
+  reorderToggleBtn.classList.remove('active');
+  reorderBar.classList.remove('active');
+}
+
+function makeCardsDraggable(){
+  document.querySelectorAll('.branch-card').forEach(card => {
+    card.setAttribute('draggable', 'true');
+    card.addEventListener('dragstart', (e) => {
+      draggedCard = card;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      document.querySelectorAll('.branch-card').forEach(c => c.classList.remove('drag-over'));
+    });
+    card.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      if(card === draggedCard) return;
+      card.classList.add('drag-over');
+    });
+    card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+    card.addEventListener('drop', (e) => {
+      e.preventDefault();
+      card.classList.remove('drag-over');
+      if(!draggedCard || card === draggedCard) return;
+      const cards = [...branchesEl.children];
+      const draggedIdx = cards.indexOf(draggedCard);
+      const targetIdx = cards.indexOf(card);
+      if(draggedIdx < targetIdx){
+        card.after(draggedCard);
+      }else{
+        card.before(draggedCard);
+      }
+    });
+  });
+}
+
+document.getElementById('reorderCancelBtn').addEventListener('click', () => {
+  exitReorderMode();
+  render(allRows);
+});
+
+document.getElementById('reorderSaveBtn').addEventListener('click', async () => {
+  const newCategoryOrder = [...branchesEl.children].map(c => c.dataset.category);
+  const updatesById = {};
+
+  function addUpdate(id, fields){
+    updatesById[id] = { ...(updatesById[id]||{id}), ...fields };
+  }
+
+  newCategoryOrder.forEach((cat, catIdx) => {
+    const base = (catIdx + 1) * 1000;
+    const itemsInCat = allRows
+      .filter(r => r.category === cat)
+      .sort((a, b) => (Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0)));
+    itemsInCat.forEach((item, i) => {
+      const newVal = base + i;
+      if(Number(item.sort_order) !== newVal){
+        addUpdate(item.id, { sort_order:newVal });
+      }
+    });
+
+    if(Object.prototype.hasOwnProperty.call(pendingHidden, cat)){
+      const newHidden = pendingHidden[cat];
+      itemsInCat.forEach(item => {
+        if(item.hidden !== newHidden){
+          addUpdate(item.id, { hidden:newHidden });
+        }
+      });
+    }
+  });
+
+  const updates = Object.values(updatesById);
+  if(updates.length === 0){
+    exitReorderMode();
+    return;
+  }
+
+  reorderBar.querySelector('.save-btn').textContent = '저장 중...';
+  try{
+    const results = await Promise.all(updates.map(async (u) => {
+      const { id, ...fields } = u;
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/links?id=eq.${id}`, {
+        method: 'PATCH',
+        headers:{
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(fields)
+      });
+      if(!res.ok){
+        let detail = '';
+        try{ detail = (await res.json()).message || await res.text(); }catch(e){ detail = res.statusText; }
+        throw new Error(`id=${id} 저장 실패 (${res.status}): ${detail}`);
+      }
+      return res;
+    }));
+    exitReorderMode();
+    await loadLinks();
+  }catch(err){
+    console.error(err);
+    alert('저장에 실패했습니다.\n\n' + err.message + '\n\n(Supabase 테이블에 sort_order/hidden 컬럼이 있는지, RLS 설정을 확인해주세요.)');
+    reorderBar.querySelector('.save-btn').textContent = '변경사항 저장';
+  }
+});
+
+loadLinks();
+trackVisit();
+</script>
+</body>
+</html>

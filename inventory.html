@@ -1,0 +1,1694 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>소모품 관리 · 바론네트웍스</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy:#1a2e4a; --navy2:#243d61; --mint:#00b8a0; --mint2:#00d4b8; --mintbg:#e6faf8;
+  --bg:#f4f6fb; --white:#ffffff; --gray1:#f0f2f7; --gray2:#e2e6ef; --gray3:#b8c0d0; --gray4:#7a8499;
+  --text:#1e2636; --text2:#4a5568; --red:#e05454; --redbg:#fef2f2;
+  --amber:#f59e0b; --amberbg:#fffbeb; --green:#22c55e; --greenbg:#f0fdf4;
+  --blue:#3b82f6; --bluebg:#eff6ff; --sidebar:220px; --radius:12px;
+  --shadow:0 2px 12px rgba(26,46,74,.08); --shadow2:0 4px 24px rgba(26,46,74,.13);
+}
+html,body{height:100%;font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+.app{display:flex;height:100vh;overflow:hidden;}
+.sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--navy);display:flex;flex-direction:column;overflow-y:auto;z-index:10;box-shadow:2px 0 16px rgba(0,0,0,.18);}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid rgba(255,255,255,.1);}
+.logo-tag{font-size:10px;font-weight:500;color:var(--mint);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;}
+.logo-title{font-size:16px;font-weight:700;color:#fff;line-height:1.3;}
+.nav{flex:1;padding:16px 0;}
+.nav-group{margin-bottom:4px;}
+.nav-group-label{font-size:10px;font-weight:600;color:rgba(255,255,255,.35);letter-spacing:.1em;text-transform:uppercase;padding:8px 20px 4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:rgba(255,255,255,.65);cursor:pointer;transition:all .15s;font-size:13.5px;font-weight:500;border-left:3px solid transparent;user-select:none;}
+.nav-item:hover{background:rgba(255,255,255,.07);color:#fff;}
+.nav-item.active{background:rgba(0,184,160,.15);color:var(--mint2);border-left-color:var(--mint);}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.1);}
+.sidebar-footer small{color:rgba(255,255,255,.3);font-size:11px;}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{background:var(--white);border-bottom:1px solid var(--gray2);padding:0 20px 0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 1px 4px rgba(26,46,74,.05);}
+.topbar-title{font-size:17px;font-weight:700;color:var(--navy);}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.badge{background:var(--mintbg);color:var(--mint);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;}
+.content{flex:1;overflow-y:auto;padding:28px;}
+.card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:20px;}
+.card-header{padding:16px 22px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--gray1);flex-wrap:wrap;gap:8px;}
+.card-title{font-size:15px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:8px;}
+.card-body{padding:20px 22px;}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.stat-card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;}
+.stat-card::after{content:'';position:absolute;top:0;right:0;width:4px;height:100%;border-radius:0 var(--radius) var(--radius) 0;}
+.stat-card.mint::after{background:var(--mint);}
+.stat-card.blue::after{background:var(--blue);}
+.stat-card.amber::after{background:var(--amber);}
+.stat-card.red::after{background:var(--red);}
+.stat-label{font-size:11.5px;color:var(--gray4);font-weight:500;}
+.stat-val{font-size:28px;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums;}
+.stat-sub{font-size:11.5px;color:var(--gray4);}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--navy);color:#fff;font-weight:600;padding:10px 12px;text-align:center;white-space:nowrap;font-size:12.5px;}
+td{padding:9px 12px;border-bottom:1px solid var(--gray1);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--gray1);}
+td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;}
+td.center{text-align:center;}
+.type-badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11.5px;font-weight:600;}
+.type-in{background:var(--bluebg);color:var(--blue);}
+.type-out{background:var(--amberbg);color:#b45309;}
+.type-audit{background:#f3f0ff;color:#7c3aed;}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group.full{grid-column:1/-1;}
+label{font-size:12px;font-weight:600;color:var(--text2);}
+input,select,textarea{border:1.5px solid var(--gray2);border-radius:8px;padding:9px 12px;font-size:13.5px;font-family:inherit;background:var(--white);color:var(--text);transition:border-color .15s,box-shadow .15s;outline:none;}
+input:focus,select:focus,textarea:focus{border-color:var(--mint);box-shadow:0 0 0 3px rgba(0,184,160,.12);}
+select{cursor:pointer;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:inherit;}
+.btn-primary{background:var(--mint);color:#fff;}
+.btn-primary:hover{background:var(--mint2);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,184,160,.3);}
+.btn-secondary{background:var(--gray1);color:var(--text2);}
+.btn-secondary:hover{background:var(--gray2);}
+.btn-danger{background:var(--redbg);color:var(--red);}
+.btn-danger:hover{background:var(--red);color:#fff;}
+.btn-undo{background:#fff3e0;color:#e65100;border:1.5px solid #ffcc80;}
+.btn-undo:hover{background:#e65100;color:#fff;}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:6px;}
+.btn-navy{background:var(--navy);color:#fff;}
+.btn-navy:hover{background:var(--navy2);}
+.btn-excel{background:#1d6f42;color:#fff;}
+.btn-excel:hover{background:#155232;}
+.filter-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+.filter-bar input,.filter-bar select{height:36px;padding:0 12px;font-size:13px;}
+.empty{text-align:center;padding:52px 20px;color:var(--gray3);}
+.empty-icon{font-size:40px;margin-bottom:12px;}
+.toast-wrap{position:fixed;bottom:28px;right:28px;display:flex;flex-direction:column;gap:10px;z-index:999;}
+.toast{background:var(--navy);color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:500;box-shadow:var(--shadow2);animation:slideUp .25s ease;display:flex;align-items:center;gap:8px;}
+.toast.success{background:#16a34a;}
+.toast.error{background:var(--red);}
+.toast.undo{background:#e65100;}
+@keyframes slideUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:16px;padding:28px;width:580px;max-width:95vw;box-shadow:var(--shadow2);animation:fadeIn .2s ease;max-height:90vh;overflow-y:auto;}
+.modal-title{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:20px;}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+@keyframes fadeIn{from{opacity:0;transform:scale(.96);}to{opacity:1;transform:scale(1);}}
+.page{display:none;}
+.page.active{display:block;}
+.divider{height:1px;background:var(--gray1);margin:14px 0;}
+.stock-zero{color:var(--gray3);}
+.stock-low{color:var(--amber);}
+.stock-ok{color:var(--mint);}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--gray2);border-radius:3px;}
+.big-table th{padding:9px 10px;font-size:12px;}
+.big-table td{padding:8px 10px;font-size:13px;}
+.big-table td.item-name{font-weight:600;color:var(--navy);white-space:nowrap;}
+.big-table td.hq-cell{background:#eff6ff;font-weight:700;color:var(--blue);}
+.export-btn-group{display:flex;gap:6px;flex-wrap:wrap;}
+
+/* ── 히트맵 ── */
+.heatmap-wrap{overflow-x:auto;}
+.heatmap-table{border-collapse:separate;border-spacing:3px;width:100%;}
+.heatmap-table th{background:var(--navy);color:#fff;padding:8px 10px;font-size:12px;border-radius:5px;white-space:nowrap;}
+.heatmap-table th.item-hd{text-align:left;min-width:110px;}
+.heatmap-table th.branch-hd{min-width:72px;}
+.hm-cell{border-radius:7px;padding:9px 6px;text-align:center;cursor:pointer;transition:transform .12s,box-shadow .12s;position:relative;}
+.hm-cell:hover{transform:scale(1.06);box-shadow:0 2px 10px rgba(0,0,0,.18);z-index:2;}
+.hm-num{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;display:block;}
+.hm-pct{font-size:10px;opacity:.75;display:block;}
+.item-label-cell{font-weight:600;font-size:13px;color:var(--navy);padding:6px 10px;white-space:nowrap;vertical-align:middle;}
+.hm-legend{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:var(--gray4);}
+.hm-legend-bar{display:flex;gap:2px;}
+.hm-legend-seg{width:24px;height:12px;border-radius:3px;}
+
+/* ── 바 차트 (canvas-free SVG) ── */
+.bar-chart-wrap{margin-top:16px;}
+.bar-chart-title{font-size:13px;font-weight:600;color:var(--navy);margin-bottom:10px;}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;}
+.bar-label{width:64px;font-size:12px;color:var(--text2);text-align:right;flex-shrink:0;}
+.bar-track{flex:1;background:var(--gray1);border-radius:4px;height:22px;position:relative;overflow:visible;}
+.bar-fill{height:100%;border-radius:4px;transition:width .4s ease;position:relative;}
+.bar-val{position:absolute;right:-42px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--navy);white-space:nowrap;}
+
+/* ── 사용량 추이 차트 ── */
+.trend-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+.trend-controls select,.trend-controls input{height:34px;padding:0 10px;font-size:13px;border-radius:7px;border:1.5px solid var(--gray2);}
+.trend-svg-wrap{overflow-x:auto;background:var(--gray1);border-radius:10px;padding:16px;}
+.trend-empty{text-align:center;padding:40px;color:var(--gray3);font-size:13px;}
+
+/* ── 되돌리기 배너 ── */
+.undo-bar{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 24px;border-radius:12px;box-shadow:var(--shadow2);display:flex;align-items:center;gap:16px;z-index:998;animation:slideUp .25s ease;font-size:13.5px;}
+.undo-bar button{background:var(--mint);color:#fff;border:none;border-radius:7px;padding:6px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+.undo-bar button:hover{background:var(--mint2);}
+.viz-tab{padding:5px 14px;border-radius:6px;border:none;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;background:transparent;color:var(--gray4);transition:all .15s;}
+.viz-tab.active{background:var(--white);color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.1);}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-tag">Inventory</div>
+    <div class="logo-title">바론네트웍스<br>소모품 관리</div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:10px">
+      <span id="cloud-dot" style="width:8px;height:8px;border-radius:50%;display:inline-block;background:#8895A7"></span>
+      <span id="cloud-text" style="font-size:10.5px;color:rgba(255,255,255,.55)">대기 중</span>
+      <button onclick="cloudSave()" title="지금 바로 서버에 저장" style="margin-left:auto;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:10.5px;padding:3px 8px;border-radius:6px;cursor:pointer">☁️ 저장</button>
+    </div>
+  </div>
+  <nav class="nav">
+    <div class="nav-group">
+      <div class="nav-group-label">현황</div>
+      <div class="nav-item active" onclick="goPage('dashboard')"><span class="nav-icon">📊</span>대시보드</div>
+      <div class="nav-item" onclick="goPage('inventory')"><span class="nav-icon">📦</span>재고 현황</div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-label">입출고</div>
+      <div class="nav-item" onclick="goPage('inout')"><span class="nav-icon">🔄</span>입고 · 불출</div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-label">기록</div>
+      <div class="nav-item" onclick="goPage('audit')"><span class="nav-icon">📝</span>재고 실사</div>
+      <div class="nav-item" onclick="goPage('trend')"><span class="nav-icon">📈</span>사용량 추이</div>
+      <div class="nav-item" onclick="goPage('history')"><span class="nav-icon">📋</span>전체 이력</div>
+    </div>
+  </nav>
+  <div class="sidebar-footer"><small>데이터: 브라우저 로컬 저장</small></div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbar-title">대시보드</div>
+    <div class="topbar-right">
+      <a href="https://varon2026.github.io/varon-links/" style="font-size:12px;color:#6B7280;text-decoration:none;margin-right:6px;">← 바론링크</a>
+      <span class="badge" id="today-badge"></span>
+      <div class="export-btn-group">
+        <button class="btn btn-sm btn-excel" onclick="exportExcel()">📥 엑셀 내보내기</button>
+        <button class="btn btn-sm btn-navy" onclick="exportJSON()">💾 JSON 백업</button>
+        <button class="btn btn-sm btn-secondary" onclick="triggerImport()">📂 불러오기</button>
+        <button class="btn btn-sm" style="background:#f3f0ff;color:#7c3aed" onclick="openThreshModal()">⚙️ 기준값 설정</button>
+      </div>
+      <input type="file" id="import-input" accept=".json,.xlsx" style="display:none" onchange="doImport(event)">
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ Dashboard ══ -->
+    <div class="page active" id="page-dashboard">
+      <div class="stat-grid" id="stat-grid"></div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📊 재고 현황 시각화</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div style="display:flex;gap:4px;background:var(--gray1);padding:3px;border-radius:8px">
+              <button class="viz-tab active" id="viz-tab-heatmap" onclick="switchViz('heatmap')">🗂 히트맵</button>
+              <button class="viz-tab" id="viz-tab-radar" onclick="switchViz('radar')">🕸 분원별 레이더</button>
+            </div>
+            <select id="hm-mode" onchange="renderDashboard()" style="height:30px;padding:0 8px;font-size:12px;border-radius:6px;border:1.5px solid var(--gray2)">
+              <option value="abs">절대 수량</option>
+              <option value="pct">비율(%)</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="viz-heatmap-area">
+            <div class="heatmap-wrap" id="heatmap-wrap"></div>
+            <div id="bar-chart-wrap" style="margin-top:20px"></div>
+          </div>
+          <div id="viz-radar-area" style="display:none">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
+              <label style="font-size:12px;font-weight:600;color:var(--text2)">분원 선택:</label>
+              <select id="radar-branch" onchange="renderRadar()" style="height:32px;padding:0 10px;font-size:13px;border-radius:7px;border:1.5px solid var(--gray2)"></select>
+            </div>
+            <div id="radar-chart-wrap"></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card">
+          <div class="card-header"><div class="card-title">🕐 최근 입출고</div></div>
+          <div class="card-body" style="padding:0" id="recent-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📝 최근 실사</div></div>
+          <div class="card-body" style="padding:0" id="recent-audit"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Inventory ══ -->
+    <div class="page" id="page-inventory">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📦 재고 현황</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:12px;color:var(--gray4)">시점 선택:</span>
+            <select id="inv-snapshot-sel" onchange="renderInventory()" style="height:32px;padding:0 10px;font-size:13px;border-radius:7px;border:1.5px solid var(--gray2)">
+              <option value="current">현재 재고 (입출고 기준)</option>
+              <option value="2025-12-23">겨울 실사 (2025-12-23)</option>
+              <option value="2026-04-08">봄 실사 (2026-04-08)</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap"><table class="big-table" id="inv-big-table"></table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ In/Out ══ -->
+    <div class="page" id="page-inout">
+      <div class="card">
+        <div class="card-header"><div class="card-title">🔄 입고 · 불출 등록</div></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group"><label>날짜</label><input type="date" id="io-date"></div>
+            <div class="form-group">
+              <label>유형</label>
+              <select id="io-type" onchange="onTypeChange()">
+                <option value="입고">입고</option>
+                <option value="불출">불출 (분원으로 출고)</option>
+              </select>
+            </div>
+            <div class="form-group"><label>품목</label><select id="io-item"></select></div>
+            <div class="form-group"><label>수량</label><input type="number" id="io-qty" min="1" placeholder="0"></div>
+            <div class="form-group" id="io-branch-wrap"><label>분원</label><select id="io-branch"></select></div>
+            <div class="form-group"><label>담당자</label><input type="text" id="io-person" placeholder="홍길동"></div>
+            <div class="form-group full"><label>비고</label><input type="text" id="io-note" placeholder="메모 (선택)"></div>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:10px">
+            <button class="btn btn-primary" onclick="saveRecord()">✅ 저장</button>
+            <button class="btn btn-secondary" onclick="clearIOForm()">초기화</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 입출고 내역</div>
+          <div class="filter-bar" style="margin:0">
+            <input type="text" id="io-search" placeholder="품목·분원·담당자 검색" style="width:190px" oninput="renderIOTable()">
+            <select id="io-filter-type" onchange="renderIOTable()"><option value="">전체</option><option value="입고">입고</option><option value="불출">불출</option></select>
+            <select id="io-filter-item" onchange="renderIOTable()"><option value="">전체 품목</option></select>
+            <select id="io-filter-branch" onchange="renderIOTable()"><option value="">전체 분원</option></select>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap">
+            <table><thead><tr><th>#</th><th>날짜</th><th>유형</th><th>품목</th><th>수량</th><th>분원</th><th>담당자</th><th>비고</th><th>수정</th><th>삭제</th></tr></thead>
+            <tbody id="io-tbody"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Audit ══ -->
+    <div class="page" id="page-audit">
+      <div class="card">
+        <div class="card-header"><div class="card-title">📝 재고 실사 등록</div></div>
+        <div class="card-body">
+          <div class="form-grid" style="max-width:580px;margin-bottom:18px">
+            <div class="form-group"><label>실사 일자</label><input type="date" id="audit-date"></div>
+            <div class="form-group"><label>주기</label><select id="audit-period"><option value="월간">월간</option><option value="학기간">학기간 (3개월)</option></select></div>
+            <div class="form-group"><label>분원</label><select id="audit-branch" onchange="renderAuditInput()"></select></div>
+            <div class="form-group"><label>확인자</label><input type="text" id="audit-person" placeholder="홍길동"></div>
+            <div class="form-group"><label>특이사항</label><input type="text" id="audit-note" placeholder="선택"></div>
+          </div>
+          <div class="tbl-wrap" style="max-width:680px">
+            <table><thead><tr><th>품목</th><th>장부 재고</th><th>실사 수량</th><th>차이</th></tr></thead>
+            <tbody id="audit-tbody"></tbody></table>
+          </div>
+          <div style="margin-top:16px"><button class="btn btn-primary" onclick="saveAudit()">✅ 실사 저장</button></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 실사 내역</div>
+          <select id="audit-filter-branch" onchange="renderAuditList()" style="height:34px;padding:0 10px;font-size:13px;border-radius:7px;border:1.5px solid var(--gray2)"><option value="">전체 분원</option></select>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap">
+            <table><thead><tr><th>#</th><th>일자</th><th>주기</th><th>분원</th><th>확인자</th><th>특이사항</th><th>상세</th><th>삭제</th></tr></thead>
+            <tbody id="audit-list-tbody"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Trend ══ -->
+    <div class="page" id="page-trend">
+      <div class="card">
+        <div class="card-header"><div class="card-title">📈 실사 기반 재고 추이</div><span style="font-size:12px;color:var(--gray4)">실사 시점(겨울→봄→여름) 간 재고 변화</span></div>
+        <div class="card-body">
+          <div class="trend-controls">
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">품목</label>
+              <select id="trend2-item">
+                <option value="__ALL__">전체 품목 비교</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">분원</label>
+              <select id="trend2-branch">
+                <option value="__ALL__">전체 합계</option>
+              </select>
+            </div>
+            <div style="align-self:flex-end">
+              <button class="btn btn-navy" onclick="renderTrend2()">조회</button>
+            </div>
+          </div>
+          <div id="trend2-chart-area"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">📉 기간별 불출(사용)량</div><span style="font-size:12px;color:var(--gray4)">입출고 기록 기반 월별/학기별 불출 집계</span></div>
+        <div class="card-body">
+          <div class="trend-controls">
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">기준</label>
+              <select id="trend-mode">
+                <option value="month">월별</option>
+                <option value="semester">학기별</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">품목</label>
+              <select id="trend-item"></select>
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">분원</label>
+              <select id="trend-branch"><option value="전체">전체 합계</option></select>
+            </div>
+            <div style="align-self:flex-end">
+              <button class="btn btn-navy" onclick="renderTrend()">조회</button>
+            </div>
+          </div>
+          <div id="trend-chart-area"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ History ══ -->
+    <div class="page" id="page-history">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 전체 이력</div>
+          <div class="filter-bar" style="margin:0">
+            <input type="date" id="hist-from"><span style="color:var(--gray4)">~</span><input type="date" id="hist-to">
+            <select id="hist-branch" onchange="renderHistory()"><option value="">전체 분원</option></select>
+            <select id="hist-item" onchange="renderHistory()"><option value="">전체 품목</option></select>
+            <button class="btn btn-sm btn-navy" onclick="renderHistory()">조회</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap">
+            <table><thead><tr><th>#</th><th>날짜</th><th>유형</th><th>품목</th><th>수량</th><th>분원</th><th>담당자</th><th>비고</th></tr></thead>
+            <tbody id="history-tbody"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- Threshold settings modal -->
+<div class="modal-overlay" id="thresh-modal">
+  <div class="modal" style="width:640px">
+    <div class="modal-title">⚙️ 기준값 설정</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--mint)">⚠️ 부족 경보 기준 (분원별)</div>
+        <div id="alert-thresh-body"></div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #f59e0b">🕸 레이더 차트 기준 (100% 기준)</div>
+        <div id="radar-thresh-body"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('thresh-modal')">취소</button>
+      <button class="btn btn-primary" onclick="saveThresh()">✅ 저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<!-- Audit detail modal -->
+<div class="modal-overlay" id="audit-modal">
+  <div class="modal">
+    <div class="modal-title">📝 실사 상세</div>
+    <div id="audit-modal-body"></div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('audit-modal')">닫기</button></div>
+  </div>
+</div>
+
+<!-- Edit record modal -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">✏️ 기록 수정</div>
+    <div class="form-grid" id="edit-form-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('edit-modal')">취소</button>
+      <button class="btn btn-primary" onclick="saveEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Constants ───────────────────────────────────────────
+const BRANCHES = ['총무보관','장안','서수원','수원','운정1','운정2','남동탄','탕정','바론'];
+const ALL_BRANCHES_NO_HQ = ['장안','서수원','수원','운정1','운정2','남동탄','탕정','바론'];
+const ITEMS = ['황봉투 소','황봉투 대','네이비가방','거북이가방','포켓홀더','볼펜','상담신청서','코칭 브로셔','스위칭 브로셔','교재관리 스티커','책책 스티커','우산','필통'];
+const BRANCH_COLORS = ['#64748b','#3b82f6','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899'];
+
+// ─── 기준값 기본값 ─────────────────────────────────────────
+const DEFAULT_ALERT = {
+  '황봉투 소':300,'황봉투 대':300,'네이비가방':100,'거북이가방':100,'포켓홀더':200,
+  '볼펜':100,'상담신청서':200,'코칭 브로셔':100,'스위칭 브로셔':200,
+  '교재관리 스티커':1000,'책책 스티커':1000,'우산':0,'필통':0
+};
+const DEFAULT_RADAR = {
+  '황봉투 소':1000,'황봉투 대':1000,'네이비가방':500,'거북이가방':500,'포켓홀더':1000,
+  '볼펜':500,'상담신청서':1000,'코칭 브로셔':1000,'스위칭 브로셔':1000,
+  '교재관리 스티커':5000,'책책 스티커':5000,'우산':100,'필통':100
+};
+
+// ─── Snapshot (포켓홀더 바론 1950→2000 수정) ─────────────
+const SNAPSHOT = {
+  '황봉투 소':      {총무보관:0,    장안:250,  서수원:100, 수원:138,  운정1:352,  운정2:1016, 남동탄:640},
+  '황봉투 대':      {총무보관:0,    장안:200,  서수원:20,  수원:82,   운정1:42,   운정2:74,   남동탄:1170},
+  '네이비가방':     {총무보관:0,    장안:25,   서수원:111, 수원:31,   운정1:19,   운정2:110,  남동탄:115},
+  '거북이가방':     {총무보관:0,    장안:0,    서수원:0,   수원:0,    운정1:0,    운정2:0,    남동탄:0},
+  '포켓홀더':       {총무보관:2000, 장안:1250, 서수원:130, 수원:900,  운정1:1002, 운정2:922,  남동탄:960},
+  '볼펜':           {총무보관:1200, 장안:460,  서수원:500, 수원:500,  운정1:475,  운정2:500,  남동탄:490},
+  '상담신청서':     {총무보관:1000, 장안:850,  서수원:500, 수원:700,  운정1:380,  운정2:444,  남동탄:960},
+  '코칭 브로셔':    {총무보관:0,    장안:0,    서수원:50,  수원:30,   운정1:20,   운정2:22,   남동탄:270},
+  '스위칭 브로셔':  {총무보관:0,    장안:61,   서수원:20,  수원:21,   운정1:25,   운정2:79,   남동탄:38},
+  '교재관리 스티커':{총무보관:26000,장안:2000, 서수원:3000,수원:3730, 운정1:3300, 운정2:2000, 남동탄:2500},
+  '책책 스티커':    {총무보관:20000,장안:2580, 서수원:3500,수원:3000, 운정1:4300, 운정2:3000, 남동탄:3500},
+  '우산':           {총무보관:0,    장안:0,    서수원:0,   수원:0,    운정1:0,    운정2:0,    남동탄:0},
+  '필통':           {총무보관:0,    장안:0,    서수원:0,   수원:0,    운정1:0,    운정2:0,    남동탄:0},
+};
+
+// ─── State ───────────────────────────────────────────────
+let DB = { records:[], audits:[], alertThresh:{}, radarThresh:{} };
+let UNDO_STACK = [];
+let editingId = null;
+
+function loadDB() {
+  const saved = localStorage.getItem('baron_inv_v6');
+  if (saved) {
+    try {
+      DB = JSON.parse(saved);
+      // 기준값 없으면 기본값 채우기
+      if (!DB.alertThresh) DB.alertThresh = {...DEFAULT_ALERT};
+      if (!DB.radarThresh) DB.radarThresh = {...DEFAULT_RADAR};
+    } catch(e) {}
+  } else {
+    DB.alertThresh = {...DEFAULT_ALERT};
+    DB.radarThresh = {...DEFAULT_RADAR};
+    initFromSnapshot();
+  }
+}
+function saveDB() {
+  localStorage.setItem('baron_inv_v6', JSON.stringify(DB));
+  scheduleCloudSave();
+}
+function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+// ─── 클라우드 저장(서버 동기화) ───────────────────────────
+const firebaseConfig={
+  apiKey:"AIzaSyACokruLFwbkCpxriOdQgVZAQfryYBmUxM",
+  authDomain:"baron-shuttle-ops.firebaseapp.com",
+  projectId:"baron-shuttle-ops",
+  storageBucket:"baron-shuttle-ops.firebasestorage.app",
+  messagingSenderId:"278466071248",
+  appId:"1:278466071248:web:e22df780d05e6b46772cd5"
+};
+firebase.initializeApp(firebaseConfig);
+const fdb=firebase.firestore();
+const CLOUD_DOC_ID='inventory';
+
+function setCloudStatus(state,text){
+  const dot=document.getElementById('cloud-dot');
+  const txt=document.getElementById('cloud-text');
+  if(dot)dot.style.background=state==='ok'?'#34C759':state==='err'?'#FF3B30':state==='loading'?'#FF9500':'#8895A7';
+  if(txt)txt.textContent=text;
+}
+
+let cloudSaveTimer=null;
+function scheduleCloudSave(){
+  if(cloudSaveTimer)clearTimeout(cloudSaveTimer);
+  cloudSaveTimer=setTimeout(cloudSave,1500);
+}
+
+async function cloudSave(){
+  try{
+    setCloudStatus('loading','저장 중');
+    await fdb.collection('inventory_backup').doc(CLOUD_DOC_ID).set({
+      db:DB, updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    setCloudStatus('ok','저장됨');
+  }catch(err){
+    console.error(err);
+    setCloudStatus('err','저장 실패');
+  }
+}
+
+async function cloudLoad(){
+  try{
+    setCloudStatus('loading','불러오는 중');
+    const snap=await fdb.collection('inventory_backup').doc(CLOUD_DOC_ID).get();
+    if(!snap.exists){
+      setCloudStatus('ok','연결됨');
+      await cloudSave();
+      return;
+    }
+    const d=snap.data();
+    if(d.db){
+      DB=d.db;
+      if(!DB.alertThresh)DB.alertThresh={...DEFAULT_ALERT};
+      if(!DB.radarThresh)DB.radarThresh={...DEFAULT_RADAR};
+      localStorage.setItem('baron_inv_v6',JSON.stringify(DB));
+      renderDashboard();updateInventorySnapshotOptions();
+    }
+    setCloudStatus('ok','연결됨');
+  }catch(err){
+    console.error(err);
+    setCloudStatus('err','연결 실패');
+  }
+}
+
+function pushUndo() {
+  UNDO_STACK.push(JSON.stringify(DB));
+  if (UNDO_STACK.length > 10) UNDO_STACK.shift();
+}
+function undo() {
+  if (UNDO_STACK.length === 0) { toast('되돌릴 내역이 없습니다','error'); return; }
+  DB = JSON.parse(UNDO_STACK.pop());
+  saveDB();
+  renderAll();
+  toast('되돌리기 완료','success');
+  hideUndoBanner();
+}
+
+function showUndoBanner(msg) {
+  hideUndoBanner();
+  const bar = document.createElement('div');
+  bar.className = 'undo-bar';
+  bar.id = 'undo-bar';
+  bar.innerHTML = `<span>✅ ${msg}</span><button onclick="undo()">↩ 되돌리기</button>`;
+  document.body.appendChild(bar);
+  setTimeout(hideUndoBanner, 7000);
+}
+function hideUndoBanner() {
+  const el = document.getElementById('undo-bar');
+  if (el) el.remove();
+}
+
+function initFromSnapshot() {
+  const date = '2026-06-29';
+  ITEMS.forEach(item => {
+    const row = SNAPSHOT[item] || {};
+    let totalOut = 0;
+    BRANCHES.filter(b=>b!=='총무보관').forEach(b => {
+      const q = row[b] || 0;
+      if (q > 0) { DB.records.push({id:uid(),date,type:'불출',item,qty:q,branch:b,person:'초기입력',note:'스냅샷 초기값'}); totalOut+=q; }
+    });
+    const totalIn = (row['총무보관']||0) + totalOut;
+    if (totalIn > 0) DB.records.push({id:uid(),date,type:'입고',item,qty:totalIn,branch:'총무보관',person:'초기입력',note:'스냅샷 초기값'});
+  });
+
+  // ── 겨울 실사 (2025-12-23) ─────────────────────────────
+  // 품목: 황봉투소/대, 가방(네이비가방), 포켓홀더, 볼펜, 상담신청서, 코칭브로셔, 스위칭브로셔
+  // 교재관리스티커·책책스티커 없음
+  const WINTER = {
+    '황봉투 소':  {총무보관:0,    장안:200,  서수원:300, 수원:190, 운정1:450, 운정2:1100, 남동탄:700},
+    '황봉투 대':  {총무보관:0,    장안:150,  서수원:50,  수원:50,  운정1:80,  운정2:1780, 남동탄:150},
+    '네이비가방': {총무보관:0,    장안:104,  서수원:120, 수원:80,  운정1:60,  운정2:80,   남동탄:160},
+    '포켓홀더':   {총무보관:2000, 장안:1000, 서수원:1000,수원:1000,운정1:1000,운정2:1000, 남동탄:1000},
+    '볼펜':       {총무보관:1200, 장안:500,  서수원:500, 수원:500, 운정1:500, 운정2:500,  남동탄:500},
+    '상담신청서': {총무보관:1000, 장안:1000, 서수원:1000,수원:1000,운정1:500, 운정2:500,  남동탄:1000},
+    '코칭 브로셔':{총무보관:0,    장안:100,  서수원:145, 수원:150, 운정1:120, 운정2:105,  남동탄:300},
+    '스위칭 브로셔':{총무보관:0,  장안:60,   서수원:60,  수원:56,  운정1:20,  운정2:150,  남동탄:50},
+    '우산':        {총무보관:0,   장안:0,    서수원:0,   수원:0,   운정1:0,   운정2:0,    남동탄:0},
+    '필통':        {총무보관:0,   장안:0,    서수원:0,   수원:0,   운정1:0,   운정2:0,    남동탄:0},
+  };
+  const WINTER_BRANCHES = ['총무보관','장안','서수원','수원','운정1','운정2','남동탄'];
+  WINTER_BRANCHES.forEach(branch => {
+    const data = {};
+    Object.entries(WINTER).forEach(([item, row]) => {
+      if (row[branch] !== undefined) data[item] = row[branch];
+    });
+    DB.audits.push({id:uid(), date:'2025-12-23', period:'학기간', branch, person:'초기입력', note:'겨울 실사', data});
+  });
+
+  // ── 봄 실사 (2026-04-08) ──────────────────────────────
+  // 품목: 황봉투소/대, 네이비가방, 포켓홀더, 볼펜, 상담신청서, 코칭브로셔, 스위칭브로셔
+  // 거북이가방 제외
+  const SPRING = {
+    '황봉투 소':  {총무보관:0,    장안:300,  서수원:250, 수원:164, 운정1:374, 운정2:1000, 남동탄:650},
+    '황봉투 대':  {총무보관:0,    장안:300,  서수원:16,  수원:25,  운정1:63,  운정2:1654, 남동탄:1180},
+    '네이비가방': {총무보관:0,    장안:46,   서수원:106, 수원:29,  운정1:36,  운정2:120,  남동탄:114},
+    '포켓홀더':   {총무보관:2000, 장안:1500, 서수원:1000,수원:1000,운정1:1048,운정2:1269, 남동탄:990},
+    '볼펜':       {총무보관:1200, 장안:500,  서수원:480, 수원:500, 운정1:490, 운정2:500,  남동탄:500},
+    '상담신청서': {총무보관:1000, 장안:850,  서수원:900, 수원:910, 운정1:428, 운정2:444,  남동탄:1000},
+    '코칭 브로셔':{총무보관:0,    장안:0,    서수원:80,  수원:71,  운정1:4,   운정2:57,   남동탄:300},
+    '스위칭 브로셔':{총무보관:0,  장안:49,   서수원:30,  수원:32,  운정1:27,  운정2:192,  남동탄:39},
+    '우산':        {총무보관:0,   장안:0,    서수원:0,   수원:0,   운정1:0,   운정2:0,    남동탄:0},
+    '필통':        {총무보관:0,   장안:0,    서수원:0,   수원:0,   운정1:0,   운정2:0,    남동탄:0},
+  };
+  const SPRING_BRANCHES = ['총무보관','장안','서수원','수원','운정1','운정2','남동탄'];
+  SPRING_BRANCHES.forEach(branch => {
+    const data = {};
+    Object.entries(SPRING).forEach(([item, row]) => {
+      if (row[branch] !== undefined) data[item] = row[branch];
+    });
+    DB.audits.push({id:uid(), date:'2026-04-08', period:'학기간', branch, person:'초기입력', note:'봄 실사', data});
+  });
+
+  saveDB();
+}
+
+// ─── Stock ───────────────────────────────────────────────
+function getStock(branch, item) {
+  if (branch === '총무보관') {
+    // 총무보관(구 바론) 입고 합계 — 저장 키가 '총무보관' 또는 구버전 '바론' 모두 인식
+    const inp = DB.records.filter(r=>r.type==='입고'&&r.item===item&&(r.branch==='총무보관'||r.branch==='바론')).reduce((s,r)=>s+r.qty,0);
+    const out = DB.records.filter(r=>r.type==='불출'&&r.item===item).reduce((s,r)=>s+r.qty,0);
+    return inp - out;
+  }
+  // 분원: 해당 분원으로 직접 입고된 수량 + 불출된 수량
+  const directIn = DB.records.filter(r=>r.type==='입고'&&r.item===item&&r.branch===branch).reduce((s,r)=>s+r.qty,0);
+  const outIn    = DB.records.filter(r=>r.type==='불출'&&r.item===item&&r.branch===branch).reduce((s,r)=>s+r.qty,0);
+  return directIn + outIn;
+}
+function getBranchOnly(item) { return ALL_BRANCHES_NO_HQ.reduce((s,b)=>s+getStock(b,item),0); }
+
+// ─── Navigation ──────────────────────────────────────────
+const PAGE_TITLES = {dashboard:'대시보드',inventory:'재고 현황',inout:'입고·불출',audit:'재고 실사',trend:'사용량 추이',history:'전체 이력'};
+function goPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{ if(n.getAttribute('onclick')?.includes(name)) n.classList.add('active'); });
+  document.getElementById('topbar-title').textContent = PAGE_TITLES[name]||name;
+  ({dashboard:renderDashboard,inventory:renderInventory,inout:renderIOTable,audit:renderAuditPage,trend:renderTrendPage,history:renderHistory}[name]||(() => {}))();
+}
+function renderAll() {
+  const activePage = document.querySelector('.page.active')?.id?.replace('page-','');
+  if(activePage) goPage(activePage);
+}
+
+// ─── Init selects ─────────────────────────────────────────
+function initSelects() {
+  const targets = {
+    'io-item': ITEMS, 'io-filter-item': ITEMS, 'hist-item': ITEMS,
+    'trend-item': ITEMS, 'trend2-item': ITEMS,
+  };
+  Object.entries(targets).forEach(([id, list]) => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    list.forEach(it=>{ const o=document.createElement('option'); o.value=o.textContent=it; sel.appendChild(o); });
+  });
+  BRANCHES.forEach(b=>{
+    ['io-branch','io-filter-branch','hist-branch'].forEach(id=>{
+      const sel=document.getElementById(id); if(!sel)return;
+      const o=document.createElement('option'); o.value=o.textContent=b; sel.appendChild(o);
+    });
+  });
+  ALL_BRANCHES_NO_HQ.forEach(b=>{
+    ['audit-branch','audit-filter-branch'].forEach(id=>{
+      const sel=document.getElementById(id); if(!sel)return;
+      const o=document.createElement('option'); o.value=o.textContent=b; sel.appendChild(o);
+    });
+    // 추이 분원 + 레이더 분원
+    ['trend-branch','trend2-branch','radar-branch'].forEach(id=>{
+      const sel=document.getElementById(id); if(!sel)return;
+      const o=document.createElement('option'); o.value=o.textContent=b; sel.appendChild(o);
+    });
+  });
+  const today=new Date().toISOString().slice(0,10);
+  ['io-date','audit-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=today;});
+  onTypeChange();
+}
+
+function onTypeChange() {
+  const type = document.getElementById('io-type').value;
+  const wrap = document.getElementById('io-branch-wrap');
+  const label = wrap.querySelector('label');
+  const sel = document.getElementById('io-branch');
+  label.textContent = type === '입고' ? '입고처' : '불출 분원';
+  sel.innerHTML = '';
+  BRANCHES.forEach(b => {
+    const o = document.createElement('option');
+    o.value = b;
+    o.textContent = b === '총무보관' ? '총무보관' : b;
+    sel.appendChild(o);
+  });
+}
+
+// ─── Dashboard ───────────────────────────────────────────
+let selectedHeatmapItem = null;
+let currentViz = 'heatmap';
+
+function switchViz(mode) {
+  currentViz = mode;
+  document.getElementById('viz-heatmap-area').style.display = mode==='heatmap'?'block':'none';
+  document.getElementById('viz-radar-area').style.display   = mode==='radar'?'block':'none';
+  document.querySelectorAll('.viz-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('viz-tab-'+mode)?.classList.add('active');
+  if (mode==='radar') renderRadar();
+  else renderHeatmap();
+}
+
+function renderDashboard() {
+  // ── stat 카드 ─────────────────────────────────────────────
+  // 1. 기준 미달 분원×품목 셀 수
+  let belowCount = 0;
+  const belowList = [];
+  ITEMS.forEach(item => {
+    const thresh = DB.alertThresh[item] || 0;
+    ALL_BRANCHES_NO_HQ.forEach(b => {
+      const q = getStock(b, item);
+      if (q < thresh) { belowCount++; belowList.push(`${b}·${item}(${q})`); }
+    });
+  });
+  // 2. 마지막 실사일
+  const lastAudit = DB.audits.length > 0
+    ? [...DB.audits].sort((a,b)=>b.date.localeCompare(a.date))[0].date : null;
+  const today = new Date().toISOString().slice(0,10);
+  const daysSince = lastAudit ? Math.floor((new Date(today)-new Date(lastAudit))/(1000*86400)) : null;
+  // 3. 실사 시점 수
+  const auditDates = [...new Set(DB.audits.map(a=>a.date))].length;
+  // 4. 총무보관 재고 없는 품목 수
+  const baronZero = ITEMS.filter(it=>getStock('총무보관',it)===0).length;
+
+  document.getElementById('stat-grid').innerHTML = `
+    <div class="stat-card red" style="cursor:pointer" title="${belowList.slice(0,10).join('\n')}${belowList.length>10?'\n...':''}">
+      <div class="stat-label">⚠️ 기준 미달 분원</div>
+      <div class="stat-val">${belowCount}</div>
+      <div class="stat-sub">분원×품목 기준치 미달</div>
+    </div>
+    <div class="stat-card amber">
+      <div class="stat-label">마지막 실사</div>
+      <div class="stat-val" style="font-size:18px;margin-top:4px">${lastAudit||'—'}</div>
+      <div class="stat-sub">${daysSince!==null ? daysSince+'일 전' : '실사 없음'}</div>
+    </div>
+    <div class="stat-card mint">
+      <div class="stat-label">실사 시점</div>
+      <div class="stat-val">${auditDates}</div>
+      <div class="stat-sub">겨울·봄·여름 등 누적</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-label">총무보관 재고 없는 품목</div>
+      <div class="stat-val">${baronZero}</div>
+      <div class="stat-sub">본사 보충 필요 품목 수</div>
+    </div>`;
+
+  if (currentViz === 'heatmap') renderHeatmap();
+  else renderRadar();
+  if (selectedHeatmapItem) renderBarChart(selectedHeatmapItem);
+  renderRecentLists();
+}
+
+function renderHeatmap() {
+  const mode = document.getElementById('hm-mode').value;
+  // 각 품목의 최대값 (분원 중) → 색 농도 기준
+  const wrap = document.getElementById('heatmap-wrap');
+
+  // 헤더
+  let html = '<table class="heatmap-table"><thead><tr><th class="item-hd">품목</th>';
+  ALL_BRANCHES_NO_HQ.forEach(b => { html += `<th class="branch-hd">${b}</th>`; });
+  html += '</tr></thead><tbody>';
+
+  ITEMS.forEach(item => {
+    const qtys = ALL_BRANCHES_NO_HQ.map(b => getStock(b, item));
+    const maxQ = Math.max(...qtys, 1);
+    const totalQ = qtys.reduce((s,q)=>s+q,0) || 1;
+    html += `<tr><td class="item-label-cell">${item}</td>`;
+    qtys.forEach((q, i) => {
+      const intensity = q / maxQ; // 0~1
+      const pct = (q / totalQ * 100).toFixed(0);
+      // 민트 계열 배경: intensity 0=흰색, 1=진한 민트
+      const r = Math.round(255 - intensity * (255 - 0));
+      const g = Math.round(255 - intensity * (255 - 184));
+      const bv = Math.round(255 - intensity * (255 - 160));
+      const bg = `rgb(${r},${g},${bv})`;
+      const fg = intensity > 0.55 ? '#fff' : '#1a2e4a';
+      const display = mode === 'pct' ? `<span class="hm-num" style="color:${fg}">${pct}%</span>` :
+        `<span class="hm-num" style="color:${fg}">${q.toLocaleString()}</span><span class="hm-pct" style="color:${fg}">${pct}%</span>`;
+      const thresh = DB.alertThresh[item] || 0;
+      const isAlert = q < thresh;
+      const alertStyle = isAlert ? 'outline:2px solid #e05454;outline-offset:-2px;' : '';
+      html += `<td class="hm-cell" style="background:${bg};${alertStyle}" data-item="${item}" data-branch="${ALL_BRANCHES_NO_HQ[i]}" data-tip="${item} / ${ALL_BRANCHES_NO_HQ[i]}: ${q.toLocaleString()}${isAlert?' ⚠️기준미달':''}" onclick="onHeatmapClick('${item}')">${display}</td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  html += `<div class="hm-legend"><span>적음</span><div class="hm-legend-bar">`;
+  [0,.2,.4,.6,.8,1].forEach(v=>{
+    const r=Math.round(255-v*(255-0)), g=Math.round(255-v*(255-184)), bv=Math.round(255-v*(255-160));
+    html+=`<div class="hm-legend-seg" style="background:rgb(${r},${g},${bv})"></div>`;
+  });
+  html += `</div><span>많음</span></div>`;
+  wrap.innerHTML = html;
+}
+
+function onHeatmapClick(item) {
+  selectedHeatmapItem = item;
+  renderBarChart(item);
+  // 선택된 행 하이라이트
+  document.querySelectorAll('.heatmap-table tr').forEach(tr=>{
+    tr.style.outline='none';
+    const label=tr.querySelector('.item-label-cell');
+    if(label) label.style.color = label.textContent===item?'var(--mint)':'var(--navy)';
+  });
+}
+
+function renderBarChart(item) {
+  const wrap = document.getElementById('bar-chart-wrap');
+  const qtys = ALL_BRANCHES_NO_HQ.map(b=>getStock(b,item));
+  const maxQ = Math.max(...qtys, 1);
+  let html = `<div class="bar-chart-title">📊 ${item} — 분원별 재고</div>`;
+  qtys.forEach((q, i) => {
+    const branch = ALL_BRANCHES_NO_HQ[i];
+    const pct = (q/maxQ*100).toFixed(1);
+    const color = BRANCH_COLORS[i+1];
+    html += `<div class="bar-row">
+      <div class="bar-label">${branch}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${pct}%;background:${color}">
+          <span class="bar-val">${q.toLocaleString()}</span>
+        </div>
+      </div>
+    </div>`;
+  });
+  wrap.innerHTML = html;
+}
+
+function renderRecentLists() {
+  const recent = [...DB.records].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,7);
+  const rl = document.getElementById('recent-list');
+  rl.innerHTML = recent.length===0?'<div class="empty"><div class="empty-icon">📭</div><p>입출고 기록이 없습니다</p></div>':
+    `<table><tbody>${recent.map(r=>`<tr>
+      <td style="padding:8px 14px;color:var(--gray4);font-size:12px">${r.date}</td>
+      <td style="padding:8px 4px"><span class="type-badge ${r.type==='입고'?'type-in':'type-out'}">${r.type}</span></td>
+      <td style="padding:8px 10px;font-weight:600">${r.item}</td>
+      <td class="num" style="padding:8px 14px">${r.qty.toLocaleString()}</td>
+      <td style="padding:8px 10px;font-size:12px;color:var(--gray4)">${r.branch||''}</td>
+    </tr>`).join('')}</tbody></table>`;
+
+  const recentA = [...DB.audits].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  const ra = document.getElementById('recent-audit');
+  ra.innerHTML = recentA.length===0?'<div class="empty"><div class="empty-icon">📭</div><p>실사 기록이 없습니다</p></div>':
+    `<table><tbody>${recentA.map(a=>`<tr>
+      <td style="padding:8px 14px;color:var(--gray4);font-size:12px">${a.date}</td>
+      <td style="padding:8px 10px;font-weight:600;color:var(--navy)">${a.branch}</td>
+      <td style="padding:8px 4px"><span class="type-badge type-audit">${a.period}</span></td>
+      <td style="padding:8px 10px;font-size:12px;color:var(--gray4)">${a.person||''}</td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+// ─── Inventory ───────────────────────────────────────────
+function renderInventory() {
+  const sel = document.getElementById('inv-snapshot-sel');
+  const mode = sel ? sel.value : 'current';
+  const tbl = document.getElementById('inv-big-table');
+
+  // 시점별 데이터 소스 결정
+  // current: 입출고 기반 실시간 재고
+  // 날짜값: 해당 날짜의 실사 결과
+  function getVal(branch, item) {
+    if (mode === 'current') return getStock(branch, item);
+    // 해당 날짜 실사 중 이 분원+품목 찾기
+    const audit = DB.audits.find(a => a.date === mode && a.branch === branch);
+    if (!audit || audit.data[item] === undefined) return null; // 없음
+    return audit.data[item];
+  }
+
+  // 시점 표시용 레이블
+  const modeLabel = mode === 'current'
+    ? '입고 합계 − 불출 합계 = 현재 재고'
+    : `실사 기준 재고 · ${mode}`;
+
+  // 헤더 (실사 시점엔 바론+분원 그대로, 합계만 있는 것만 보여줌)
+  const headers = ['품목', ...BRANCHES, '분원합계', '전체합계\n(분원+총무보관)'];
+  tbl.innerHTML = `<thead>
+    <tr><th colspan="${headers.length}" style="background:#2d3f5a;font-size:11px;font-weight:400;padding:5px 12px;text-align:left;color:rgba(255,255,255,.6)">${modeLabel}</th></tr>
+    <tr>${headers.map((h,i)=>{
+      if(i===1) return `<th style="background:#2563eb">${h}</th>`;
+      if(i===headers.length-2) return `<th style="background:#0d7a6a">${h}</th>`;
+      if(i===headers.length-1) return `<th style="background:#0a5c50;white-space:pre-line">${h}</th>`;
+      return `<th>${h}</th>`;
+    }).join('')}</tr></thead>`;
+
+  const tbody = document.createElement('tbody');
+  ITEMS.forEach(item => {
+    const tr = document.createElement('tr');
+    const vals = BRANCHES.map(b => getVal(b, item));
+    const branchVals = ALL_BRANCHES_NO_HQ.map(b => getVal(b, item));
+    const branchSum = branchVals.reduce((s, v) => s + (v ?? 0), 0);
+    const baronVal = getVal('총무보관', item);
+    const totalSum = branchSum + (baronVal ?? 0);
+    const hasAny = vals.some(v => v !== null);
+
+    tr.innerHTML = `<td class="item-name">${item}</td>` +
+      vals.map((q, i) => {
+        const isHQ = BRANCHES[i] === '총무보관';
+        if (q === null) return `<td class="num" style="color:var(--gray3)">—</td>`;
+        const cls = q === 0 ? 'stock-zero' : q <= 5 ? 'stock-low' : 'stock-ok';
+        return `<td class="num ${isHQ ? 'hq-cell' : ''}"><span class="${isHQ ? '' : cls}">${q.toLocaleString()}</span></td>`;
+      }).join('') +
+      `<td class="num" style="font-weight:700;color:var(--mint);background:#e6faf8">${hasAny ? branchSum.toLocaleString() : '—'}</td>` +
+      `<td class="num" style="font-weight:700;color:#fff;background:#00b8a0">${hasAny ? totalSum.toLocaleString() : '—'}</td>`;
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+
+  // 드롭다운에 실사 날짜 자동 반영 (새 실사가 추가되면)
+  updateInventorySnapshotOptions();
+}
+
+function updateInventorySnapshotOptions() {
+  const sel = document.getElementById('inv-snapshot-sel');
+  if (!sel) return;
+  const current = sel.value;
+  // 기존 실사날짜 옵션들 제거 후 재생성
+  [...sel.options].forEach(o => { if (o.value !== 'current') o.remove(); });
+  // 실사에 등장하는 고유 날짜 추출 (오래된순)
+  const auditDates = [...new Set(DB.audits.map(a => a.date))].sort();
+  auditDates.forEach(d => {
+    const o = document.createElement('option');
+    o.value = d;
+    // note에서 시즌 이름 추출
+    const sample = DB.audits.find(a => a.date === d);
+    const label = sample?.note ? `${sample.note} (${d})` : d;
+    o.textContent = label;
+    sel.appendChild(o);
+  });
+  // 선택값 복원
+  if ([...sel.options].some(o => o.value === current)) sel.value = current;
+}
+
+// ─── In/Out ──────────────────────────────────────────────
+function saveRecord() {
+  const date   = document.getElementById('io-date').value;
+  const type   = document.getElementById('io-type').value;
+  const item   = document.getElementById('io-item').value;
+  const qty    = parseInt(document.getElementById('io-qty').value)||0;
+  const branch = document.getElementById('io-branch').value;
+  const person = document.getElementById('io-person').value.trim();
+  const note   = document.getElementById('io-note').value.trim();
+  if(!date||qty<=0){toast('날짜와 수량을 입력하세요','error');return;}
+  pushUndo();
+  DB.records.push({id:uid(),date,type,item,qty,branch,person,note});
+  saveDB(); renderIOTable(); renderDashboard();
+  showUndoBanner(`${type} 저장: ${item} ${qty.toLocaleString()}개`);
+  clearIOForm();
+}
+function clearIOForm(){
+  document.getElementById('io-qty').value='';
+  document.getElementById('io-note').value='';
+  document.getElementById('io-person').value='';
+}
+
+// 수정 모달
+function openEdit(id) {
+  const r = DB.records.find(x=>x.id===id);
+  if(!r) return;
+  editingId = id;
+  const isIn = r.type==='입고';
+  const branchOpts = isIn ? '<option value="총무보관">총무보관</option>' :
+    ALL_BRANCHES_NO_HQ.map(b=>`<option value="${b}" ${r.branch===b?'selected':''}>${b}</option>`).join('');
+  document.getElementById('edit-form-body').innerHTML = `
+    <div class="form-group"><label>날짜</label><input type="date" id="edit-date" value="${r.date}"></div>
+    <div class="form-group"><label>유형</label><input type="text" value="${r.type}" disabled style="background:var(--gray1)"></div>
+    <div class="form-group"><label>품목</label><select id="edit-item">${ITEMS.map(it=>`<option value="${it}" ${r.item===it?'selected':''}>${it}</option>`).join('')}</select></div>
+    <div class="form-group"><label>수량</label><input type="number" id="edit-qty" value="${r.qty}" min="1"></div>
+    <div class="form-group"><label>${isIn?'입고처':'불출 분원'}</label><select id="edit-branch">${branchOpts}</select></div>
+    <div class="form-group"><label>담당자</label><input type="text" id="edit-person" value="${r.person||''}"></div>
+    <div class="form-group full"><label>비고</label><input type="text" id="edit-note" value="${r.note||''}"></div>`;
+  document.getElementById('edit-modal').classList.add('open');
+}
+function saveEdit() {
+  const r = DB.records.find(x=>x.id===editingId);
+  if(!r) return;
+  const qty = parseInt(document.getElementById('edit-qty').value)||0;
+  if(qty<=0){toast('수량을 입력하세요','error');return;}
+  pushUndo();
+  r.date   = document.getElementById('edit-date').value;
+  r.item   = document.getElementById('edit-item').value;
+  r.qty    = qty;
+  r.branch = document.getElementById('edit-branch').value;
+  r.person = document.getElementById('edit-person').value.trim();
+  r.note   = document.getElementById('edit-note').value.trim();
+  saveDB(); renderIOTable(); renderDashboard();
+  closeModal('edit-modal');
+  showUndoBanner('수정 완료');
+}
+
+function deleteRecord(id){
+  const r = DB.records.find(x=>x.id===id);
+  if(!confirm(`삭제: ${r?.item} ${r?.qty}개 (${r?.date})\n계속하시겠습니까?`))return;
+  pushUndo();
+  DB.records=DB.records.filter(r=>r.id!==id);
+  saveDB(); renderIOTable(); renderDashboard();
+  showUndoBanner('삭제 완료 — 실수라면 되돌리기');
+}
+
+function renderIOTable(){
+  const search  =(document.getElementById('io-search')?.value||'').toLowerCase();
+  const fType   = document.getElementById('io-filter-type')?.value||'';
+  const fItem   = document.getElementById('io-filter-item')?.value||'';
+  const fBranch = document.getElementById('io-filter-branch')?.value||'';
+  let rows=[...DB.records].sort((a,b)=>b.date.localeCompare(a.date));
+  if(fType) rows=rows.filter(r=>r.type===fType);
+  if(fItem) rows=rows.filter(r=>r.item===fItem);
+  if(fBranch) rows=rows.filter(r=>r.branch===fBranch);
+  if(search) rows=rows.filter(r=>(r.item+r.branch+r.person+r.note).toLowerCase().includes(search));
+  const tbody=document.getElementById('io-tbody');
+  if(rows.length===0){tbody.innerHTML=`<tr><td colspan="10"><div class="empty"><div class="empty-icon">📭</div><p>내역이 없습니다</p></div></td></tr>`;return;}
+  tbody.innerHTML=rows.map((r,i)=>`<tr>
+    <td class="center" style="color:var(--gray4)">${rows.length-i}</td>
+    <td class="center">${r.date}</td>
+    <td class="center"><span class="type-badge ${r.type==='입고'?'type-in':'type-out'}">${r.type}</span></td>
+    <td style="font-weight:600">${r.item}</td>
+    <td class="num">${r.qty.toLocaleString()}</td>
+    <td class="center">${r.branch||'—'}</td>
+    <td class="center">${r.person||'—'}</td>
+    <td style="color:var(--gray4);font-size:12px">${r.note||''}</td>
+    <td class="center"><button class="btn btn-sm btn-secondary" onclick="openEdit('${r.id}')">수정</button></td>
+    <td class="center"><button class="btn btn-sm btn-danger" onclick="deleteRecord('${r.id}')">삭제</button></td>
+  </tr>`).join('');
+}
+
+// ─── Audit ───────────────────────────────────────────────
+function renderAuditPage(){ renderAuditInput(); renderAuditList(); }
+function renderAuditInput(){
+  const branch=document.getElementById('audit-branch').value;
+  document.getElementById('audit-tbody').innerHTML=ITEMS.map(item=>{
+    const book=branch?getStock(branch,item):0;
+    const key=item.replace(/ /g,'_');
+    return `<tr>
+      <td style="font-weight:600;padding:8px 12px">${item}</td>
+      <td class="num" style="color:var(--blue);padding:8px 12px">${book.toLocaleString()}</td>
+      <td class="center" style="padding:6px 10px"><input type="number" id="aq-${key}" min="0" placeholder="0" oninput="updateDiff('${key}',${book})" style="width:85px;text-align:right;padding:5px 8px;border:1.5px solid var(--gray2);border-radius:6px;font-size:13px;font-family:inherit"></td>
+      <td class="num" id="adiff-${key}" style="padding:8px 12px;color:var(--gray4)">—</td>
+    </tr>`;
+  }).join('');
+}
+function updateDiff(key,book){
+  const val=parseInt(document.getElementById('aq-'+key)?.value);
+  const el=document.getElementById('adiff-'+key);
+  if(!el)return;
+  if(isNaN(val)){el.textContent='—';el.style.color='var(--gray4)';return;}
+  const diff=val-book;
+  el.textContent=(diff>=0?'+':'')+diff.toLocaleString();
+  el.style.color=diff<0?'var(--red)':diff>0?'var(--amber)':'var(--mint)';
+}
+function saveAudit(){
+  const date=document.getElementById('audit-date').value;
+  const period=document.getElementById('audit-period').value;
+  const branch=document.getElementById('audit-branch').value;
+  const person=document.getElementById('audit-person').value.trim();
+  const note=document.getElementById('audit-note').value.trim();
+  if(!date||!branch){toast('날짜와 분원을 선택하세요','error');return;}
+  const data={};
+  ITEMS.forEach(item=>{
+    const val=parseInt(document.getElementById('aq-'+item.replace(/ /g,'_'))?.value);
+    if(!isNaN(val)) data[item]=val;
+  });
+  if(Object.keys(data).length===0){toast('실사 수량을 입력하세요','error');return;}
+  pushUndo();
+  DB.audits.push({id:uid(),date,period,branch,person,note,data});
+  saveDB(); renderAuditList(); updateInventorySnapshotOptions();
+  toast(`실사 저장 완료: ${branch} (${date})`,'success');
+  ITEMS.forEach(item=>{const el=document.getElementById('aq-'+item.replace(/ /g,'_'));if(el)el.value='';});
+  document.getElementById('audit-note').value='';
+  document.getElementById('audit-person').value='';
+  renderAuditInput();
+}
+function deleteAudit(id){
+  if(!confirm('실사 기록을 삭제하시겠습니까?'))return;
+  pushUndo();
+  DB.audits=DB.audits.filter(a=>a.id!==id);
+  saveDB(); renderAuditList();
+  showUndoBanner('실사 삭제 완료');
+}
+function renderAuditList(){
+  const fBranch=document.getElementById('audit-filter-branch')?.value||'';
+  let rows=[...DB.audits].sort((a,b)=>b.date.localeCompare(a.date));
+  if(fBranch) rows=rows.filter(a=>a.branch===fBranch);
+  const tbody=document.getElementById('audit-list-tbody');
+  if(rows.length===0){tbody.innerHTML=`<tr><td colspan="8"><div class="empty"><div class="empty-icon">📭</div><p>실사 기록이 없습니다</p></div></td></tr>`;return;}
+  tbody.innerHTML=rows.map((a,i)=>`<tr>
+    <td class="center" style="color:var(--gray4)">${rows.length-i}</td>
+    <td class="center">${a.date}</td>
+    <td class="center"><span class="type-badge type-audit">${a.period}</span></td>
+    <td class="center" style="font-weight:600;color:var(--navy)">${a.branch}</td>
+    <td class="center">${a.person||'—'}</td>
+    <td style="font-size:12px;color:var(--gray4)">${a.note||''}</td>
+    <td class="center"><button class="btn btn-sm btn-secondary" onclick="showAuditDetail('${a.id}')">상세</button></td>
+    <td class="center"><button class="btn btn-sm btn-danger" onclick="deleteAudit('${a.id}')">삭제</button></td>
+  </tr>`).join('');
+}
+function showAuditDetail(id){
+  const a=DB.audits.find(x=>x.id===id); if(!a)return;
+  const rows=Object.entries(a.data).map(([item,actual])=>{
+    const book=getStock(a.branch,item); const diff=actual-book;
+    const dc=diff<0?'var(--red)':diff>0?'var(--amber)':'var(--mint)';
+    return `<tr><td style="padding:7px 10px;font-weight:500">${item}</td><td class="num" style="padding:7px 10px;color:var(--blue)">${book.toLocaleString()}</td><td class="num" style="padding:7px 10px;font-weight:700">${actual.toLocaleString()}</td><td class="num" style="padding:7px 10px;color:${dc};font-weight:700">${diff>=0?'+':''}${diff.toLocaleString()}</td></tr>`;
+  }).join('');
+  document.getElementById('audit-modal-body').innerHTML=`
+    <div style="margin-bottom:14px;font-size:13px;color:var(--text2)"><strong>${a.branch}</strong> · ${a.date} · ${a.period} · ${a.person||'—'}${a.note?`<br><span style="color:var(--gray4)">${a.note}</span>`:''}</div>
+    <div class="tbl-wrap"><table style="width:100%"><thead><tr><th>품목</th><th>장부</th><th>실사</th><th>차이</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  document.getElementById('audit-modal').classList.add('open');
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+// ─── Trend ───────────────────────────────────────────────
+function renderTrendPage() { renderTrend2(); renderTrend(); }
+
+function renderRadar() {
+  const branch = document.getElementById('radar-branch')?.value || ALL_BRANCHES_NO_HQ[0];
+  const wrap = document.getElementById('radar-chart-wrap');
+  if (!wrap) return;
+
+  const vals = ITEMS.map(item => getStock(branch, item));
+  const threshs = ITEMS.map(item => DB.radarThresh[item] || 1);
+  const pcts = vals.map((v,i) => Math.min(v / threshs[i], 1.5));
+
+  const N = ITEMS.length;
+  const CX=300, CY=205, R=145;
+  const angles = ITEMS.map((_,i) => (i/N)*2*Math.PI - Math.PI/2);
+  const polyPts = angles.map((a,i) => [CX + pcts[i]*R*Math.cos(a), CY + pcts[i]*R*Math.sin(a)]);
+  const W=640, H=420;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto;display:block">`;
+
+  // 격자 (25% 단위)
+  [.25,.5,.75,1,1.25,1.5].forEach(pct => {
+    const pts = angles.map(a=>`${CX+pct*R*Math.cos(a)},${CY+pct*R*Math.sin(a)}`).join(' ');
+    const isRef = pct === 1;
+    svg += `<polygon points="${pts}" fill="none" stroke="${isRef?'#f59e0b':'#e2e6ef'}" stroke-width="${isRef?2:1}" ${isRef?'':'stroke-dasharray="4,3"'}/>`;
+    svg += `<text x="${CX+4}" y="${CY-pct*R-3}" font-size="9" fill="${isRef?'#f59e0b':'#b8c0d0'}">${Math.round(pct*100)}%</text>`;
+  });
+  // 축선
+  angles.forEach((a,i) => {
+    svg += `<line x1="${CX}" y1="${CY}" x2="${CX+1.5*R*Math.cos(a)}" y2="${CY+1.5*R*Math.sin(a)}" stroke="#e2e6ef" stroke-width="1"/>`;
+    const lx = CX+(R+28)*Math.cos(a), ly = CY+(R+28)*Math.sin(a);
+    const anchor = Math.cos(a)>0.1?'start':Math.cos(a)<-0.1?'end':'middle';
+    const pctVal = Math.round(pcts[i]*100);
+    const col = pcts[i]>=1?'#00b8a0':pcts[i]>=0.5?'#f59e0b':'#e05454';
+    svg += `<text x="${lx}" y="${ly}" text-anchor="${anchor}" font-size="10.5" fill="#4a5568" font-weight="600">${ITEMS[i]}</text>`;
+    svg += `<text x="${lx}" y="${ly+13}" text-anchor="${anchor}" font-size="10" fill="${col}" font-weight="700">${pctVal}% (${vals[i].toLocaleString()})</text>`;
+  });
+  // 기준선 100%
+  const refPoly = angles.map(a=>`${CX+R*Math.cos(a)},${CY+R*Math.sin(a)}`).join(' ');
+  svg += `<polygon points="${refPoly}" fill="rgba(245,158,11,.06)" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3"/>`;
+  // 데이터
+  svg += `<polygon points="${polyPts.map(p=>p.join(',')).join(' ')}" fill="rgba(0,184,160,.18)" stroke="#00b8a0" stroke-width="2.5"/>`;
+  polyPts.forEach(([x,y],i) => {
+    const col = pcts[i]>=1?'#00b8a0':pcts[i]>=0.5?'#f59e0b':'#e05454';
+    svg += `<circle cx="${x}" cy="${y}" r="5" fill="${col}" stroke="#fff" stroke-width="2"/>`;
+  });
+  // 제목
+  svg += `<text x="${W/2}" y="18" text-anchor="middle" font-size="13" fill="#1a2e4a" font-weight="700">${branch} · 기준 대비 재고율</text>`;
+  // 범례
+  [[`#00b8a0`,'기준 이상(≥100%)'],[`#f59e0b`,'주의(50~99%)'],[`#e05454`,'부족(<50%)']].forEach(([c,t],i) => {
+    const lx = 30 + i*195;
+    svg += `<circle cx="${lx+5}" cy="${H-22}" r="5" fill="${c}"/>`;
+    svg += `<text x="${lx+14}" y="${H-18}" font-size="11" fill="#4a5568">${t}</text>`;
+  });
+  svg += `</svg>`;
+  wrap.innerHTML = `<div class="trend-svg-wrap">${svg}</div>`;
+}
+
+// ─── Trend (불출 기반) ────────────────────────────────────
+function renderTrend() {
+  const mode   = document.getElementById('trend-mode').value;
+  const item   = document.getElementById('trend-item').value;
+  const branch = document.getElementById('trend-branch').value;
+  const area   = document.getElementById('trend-chart-area');
+  const relevant = DB.records.filter(r => r.type==='불출' && r.item===item && (branch==='전체'||r.branch===branch));
+  if (relevant.length === 0) {
+    area.innerHTML = `<div class="trend-empty">📭 해당 조건의 불출 기록이 없습니다.<br>입출고 &gt; 불출을 먼저 등록하세요.</div>`; return;
+  }
+  const buckets = {};
+  relevant.forEach(r => {
+    const key = mode==='month' ? getMonthKey(r.date) : getSemesterKey(r.date);
+    buckets[key] = (buckets[key]||0) + r.qty;
+  });
+  const labels = Object.keys(buckets).sort();
+  const vals   = labels.map(k=>buckets[k]);
+  drawLineChart(area, labels, vals, item, branch==='전체'?'전체 분원':branch, '불출(사용)량');
+}
+
+// ─── Trend2 (실사 기반) ───────────────────────────────────
+function renderTrend2() {
+  const item   = document.getElementById('trend2-item').value;
+  const branch = document.getElementById('trend2-branch').value;
+  const area   = document.getElementById('trend2-chart-area');
+
+  // 실사 날짜들 수집 (오름차순)
+  const auditDates = [...new Set(DB.audits.map(a=>a.date))].sort();
+
+  // 현재(여름) 기준점 추가: 오늘 날짜, getStock 기준
+  const TODAY = new Date().toISOString().slice(0,10);
+  const allDates = auditDates.includes(TODAY) ? auditDates : [...auditDates, TODAY];
+
+  if (item === '__ALL__') {
+    // 전체 품목 — 분원 합산 or 특정 분원, 품목별 꺾은선
+    renderAllItemsTrend(area, allDates, branch);
+    return;
+  }
+
+  // 단일 품목
+  if (branch === '__ALL__') {
+    // 전체 분원 합산 단일선
+    const labels = allDates;
+    const vals = allDates.map(d => {
+      if (d === TODAY) {
+        // 현재 재고 합산
+        return ALL_BRANCHES_NO_HQ.reduce((s,b)=>s+getStock(b,item),0);
+      }
+      // 해당 날짜 실사합산
+      const sum = ALL_BRANCHES_NO_HQ.reduce((s,b) => {
+        const audit = DB.audits.find(a=>a.date===d&&a.branch===b);
+        return s + (audit?.data[item] ?? 0);
+      }, 0);
+      return sum;
+    });
+    const labelNames = labels.map(d => d===TODAY?`현재\n(${d})`:d);
+    drawLineChart(area, labelNames, vals, item, '전체 분원 합산', '재고');
+  } else {
+    // 특정 분원
+    const labels = allDates;
+    const labelNames = labels.map(d => d===TODAY?`현재\n(${d})`:d);
+    const vals = allDates.map(d => {
+      if (d === TODAY) return getStock(branch, item);
+      const audit = DB.audits.find(a=>a.date===d&&a.branch===branch);
+      return audit?.data[item] ?? null;
+    });
+    // null이 섞여 있으면 분원별 멀티선 대신 단일선으로
+    drawLineChartNullable(area, labelNames, vals, item, branch);
+  }
+}
+
+function renderAllItemsTrend(area, allDates, branch) {
+  // 각 품목별로 시점별 합계(분원 전체) 또는 특정 분원 값
+  const TODAY = new Date().toISOString().slice(0,10);
+  const labelNames = allDates.map(d => d===TODAY?`현재`:d);
+  const itemMap = {};
+  ITEMS.forEach(item => {
+    itemMap[item] = allDates.map(d => {
+      if (branch === '__ALL__') {
+        if (d === TODAY) return ALL_BRANCHES_NO_HQ.reduce((s,b)=>s+getStock(b,item),0);
+        return ALL_BRANCHES_NO_HQ.reduce((s,b) => {
+          const a = DB.audits.find(x=>x.date===d&&x.branch===b);
+          return s + (a?.data[item] ?? 0);
+        }, 0);
+      } else {
+        if (d === TODAY) return getStock(branch, item);
+        const a = DB.audits.find(x=>x.date===d&&x.branch===branch);
+        return a?.data[item] ?? null;
+      }
+    });
+  });
+  // 품목별 색상으로 멀티선
+  drawItemMultiLineChart(area, labelNames, itemMap, branch==='__ALL__'?'전체 분원':branch);
+}
+
+function drawLineChartNullable(container, labels, vals, item, subtitle) {
+  // null 제거 후 실제 있는 점만 그림
+  const validIdx = vals.map((v,i)=>v!==null?i:-1).filter(i=>i>=0);
+  if (validIdx.length === 0) {
+    container.innerHTML=`<div class="trend-empty">📭 ${item} · ${subtitle}의 실사 데이터가 없습니다</div>`; return;
+  }
+  const usedLabels = validIdx.map(i=>labels[i]);
+  const usedVals   = validIdx.map(i=>vals[i]);
+  drawLineChart(container, usedLabels, usedVals, item, subtitle, '재고');
+}
+
+function drawItemMultiLineChart(container, dates, itemMap, subtitle) {
+  const ITEM_COLORS = ['#3b82f6','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899','#00b8a0','#64748b'];
+  const items = Object.keys(itemMap);
+  const W=760, H=300, PL=70, PR=160, PT=28, PB=55;
+  const cW=W-PL-PR, cH=H-PT-PB;
+  const n=dates.length;
+  const xs = dates.map((_,i)=>PL+(n<=1?cW/2:i/(n-1)*cW));
+  const allVals = items.flatMap(it=>itemMap[it].filter(v=>v!==null));
+  const maxV = Math.max(...allVals,1);
+
+  let svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto;display:block">`;
+  for(let i=0;i<=4;i++){
+    const y=PT+cH/4*i; const v=Math.round(maxV*(1-i/4));
+    svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="#e2e6ef" stroke-width="1"/>`;
+    svg+=`<text x="${PL-6}" y="${y+4}" text-anchor="end" font-size="11" fill="#7a8499">${v.toLocaleString()}</text>`;
+  }
+  items.forEach((item,ii)=>{
+    const color = ITEM_COLORS[ii%ITEM_COLORS.length];
+    const vals = itemMap[item];
+    const validXY = vals.map((v,i)=>v!==null?[xs[i],PT+cH-(v/maxV)*cH]:null).filter(Boolean);
+    if(validXY.length>1){
+      const pts=validXY.map(([x,y])=>`${x},${y}`).join(' ');
+      svg+=`<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>`;
+    }
+    validXY.forEach(([x,y])=>{ svg+=`<circle cx="${x}" cy="${y}" r="4" fill="${color}" stroke="#fff" stroke-width="1.5"/>`; });
+    // 범례
+    const ly = PT+(ii%10)*24;
+    svg+=`<rect x="${W-PR+10}" y="${ly-7}" width="12" height="12" rx="3" fill="${color}"/>`;
+    svg+=`<text x="${W-PR+26}" y="${ly+3}" font-size="11" fill="#1a2e4a">${item}</text>`;
+  });
+  dates.forEach((d,i)=>{
+    const lines = d.split('\n');
+    lines.forEach((l,li)=>{ svg+=`<text x="${xs[i]}" y="${H-PB+16+li*13}" text-anchor="middle" font-size="10" fill="#7a8499">${l}</text>`; });
+  });
+  svg+=`<text x="${PL}" y="${PT-8}" font-size="13" fill="#1a2e4a" font-weight="700">전체 품목 · ${subtitle}</text>`;
+  svg+=`</svg>`;
+  container.innerHTML=`<div class="trend-svg-wrap">${svg}</div>`;
+}
+
+function drawLineChart(container, labels, vals, item, subtitle, yLabel) {
+  const maxV = Math.max(...vals, 1);
+  const W=680, H=220, PL=60, PR=20, PT=20, PB=50;
+  const cW=W-PL-PR, cH=H-PT-PB;
+  const n=labels.length;
+  if(n===0){container.innerHTML='<div class="trend-empty">데이터 없음</div>';return;}
+  const xs = labels.map((_,i)=>PL + (n===1?cW/2:i/(n-1)*cW));
+  const ys = vals.map(v=>PT+cH - (v/maxV)*cH);
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto;display:block">`;
+  // grid
+  for(let i=0;i<=4;i++){
+    const y=PT+cH/4*i;
+    const v=Math.round(maxV*(1-i/4));
+    svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="#e2e6ef" stroke-width="1"/>`;
+    svg+=`<text x="${PL-6}" y="${y+4}" text-anchor="end" font-size="11" fill="#7a8499">${v.toLocaleString()}</text>`;
+  }
+  // area
+  if(n>1){
+    const pts = xs.map((x,i)=>`${x},${ys[i]}`).join(' ');
+    svg+=`<polyline points="${pts}" fill="none" stroke="#00b8a0" stroke-width="2.5" stroke-linejoin="round"/>`;
+    const apts = `${xs[0]},${PT+cH} `+xs.map((x,i)=>`${x},${ys[i]}`).join(' ')+` ${xs[n-1]},${PT+cH}`;
+    svg+=`<polygon points="${apts}" fill="rgba(0,184,160,.12)"/>`;
+  }
+  // dots & labels
+  xs.forEach((x,i)=>{
+    svg+=`<circle cx="${x}" cy="${ys[i]}" r="5" fill="#00b8a0" stroke="#fff" stroke-width="2"/>`;
+    svg+=`<text x="${x}" y="${H-PB+18}" text-anchor="middle" font-size="11" fill="#7a8499">${labels[i]}</text>`;
+    svg+=`<text x="${x}" y="${ys[i]-10}" text-anchor="middle" font-size="12" fill="#1a2e4a" font-weight="600">${vals[i].toLocaleString()}</text>`;
+  });
+  svg+=`<text x="${PL}" y="${PT-6}" font-size="13" fill="#1a2e4a" font-weight="700">${item} · ${subtitle}</text>`;
+  svg+=`</svg>`;
+  container.innerHTML = `<div class="trend-svg-wrap">${svg}</div>`;
+}
+
+function drawMultiLineChart(container, dates, branchMap, item) {
+  const branches = Object.keys(branchMap);
+  const W=720, H=260, PL=60, PR=120, PT=24, PB=50;
+  const cW=W-PL-PR, cH=H-PT-PB;
+  const n=dates.length;
+  const xs = dates.map((_,i)=>PL+(n===1?cW/2:i/(n-1)*cW));
+  // 전체 최대값
+  const allVals = branches.flatMap(b=>branchMap[b].map(p=>p.val));
+  const maxV = Math.max(...allVals,1);
+
+  let svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto;display:block">`;
+  for(let i=0;i<=4;i++){
+    const y=PT+cH/4*i; const v=Math.round(maxV*(1-i/4));
+    svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="#e2e6ef" stroke-width="1"/>`;
+    svg+=`<text x="${PL-6}" y="${y+4}" text-anchor="end" font-size="11" fill="#7a8499">${v.toLocaleString()}</text>`;
+  }
+  branches.forEach((branch,bi)=>{
+    const color=BRANCH_COLORS[(ALL_BRANCHES_NO_HQ.indexOf(branch)+1)%BRANCH_COLORS.length]||'#3b82f6';
+    const pts=branchMap[branch];
+    // map each date→val (may be missing)
+    const dateValMap={};
+    pts.forEach(p=>dateValMap[p.date]=p.val);
+    const ptsFiltered=dates.filter(d=>dateValMap[d]!==undefined);
+    if(ptsFiltered.length<1)return;
+    const lineXs=ptsFiltered.map(d=>xs[dates.indexOf(d)]);
+    const lineYs=ptsFiltered.map(d=>PT+cH-(dateValMap[d]/maxV)*cH);
+    if(lineXs.length>1){
+      const pts2=lineXs.map((x,i)=>`${x},${lineYs[i]}`).join(' ');
+      svg+=`<polyline points="${pts2}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>`;
+    }
+    lineXs.forEach((x,i)=>{ svg+=`<circle cx="${x}" cy="${lineYs[i]}" r="4" fill="${color}" stroke="#fff" stroke-width="1.5"/>`; });
+    // legend
+    const ly=PT+bi*18;
+    svg+=`<rect x="${W-PR+8}" y="${ly-6}" width="12" height="12" rx="3" fill="${color}"/>`;
+    svg+=`<text x="${W-PR+24}" y="${ly+4}" font-size="11" fill="#1a2e4a">${branch}</text>`;
+  });
+  dates.forEach((d,i)=>{ svg+=`<text x="${xs[i]}" y="${H-PB+18}" text-anchor="middle" font-size="10" fill="#7a8499">${d}</text>`; });
+  svg+=`<text x="${PL}" y="${PT-6}" font-size="13" fill="#1a2e4a" font-weight="700">${item} · 실사 기반 분원별 재고 추이</text>`;
+  svg+=`</svg>`;
+  container.innerHTML=`<div class="trend-svg-wrap">${svg}</div>`;
+}
+
+// ─── History ─────────────────────────────────────────────
+function renderHistory(){
+  const from=document.getElementById('hist-from').value;
+  const to=document.getElementById('hist-to').value;
+  const branch=document.getElementById('hist-branch').value;
+  const item=document.getElementById('hist-item').value;
+  let rows=[...DB.records].sort((a,b)=>b.date.localeCompare(a.date));
+  if(from) rows=rows.filter(r=>r.date>=from);
+  if(to)   rows=rows.filter(r=>r.date<=to);
+  if(branch) rows=rows.filter(r=>r.branch===branch);
+  if(item)   rows=rows.filter(r=>r.item===item);
+  const tbody=document.getElementById('history-tbody');
+  if(rows.length===0){tbody.innerHTML=`<tr><td colspan="8"><div class="empty"><div class="empty-icon">📭</div><p>조건에 맞는 이력이 없습니다</p></div></td></tr>`;return;}
+  tbody.innerHTML=rows.map((r,i)=>`<tr>
+    <td class="center" style="color:var(--gray4)">${rows.length-i}</td>
+    <td class="center">${r.date}</td>
+    <td class="center"><span class="type-badge ${r.type==='입고'?'type-in':'type-out'}">${r.type}</span></td>
+    <td style="font-weight:600">${r.item}</td>
+    <td class="num">${r.qty.toLocaleString()}</td>
+    <td class="center">${r.branch||'—'}</td>
+    <td class="center">${r.person||'—'}</td>
+    <td style="font-size:12px;color:var(--gray4)">${r.note||''}</td>
+  </tr>`).join('');
+}
+
+// ─── Excel Export ─────────────────────────────────────────
+function exportExcel(){
+  const wb=XLSX.utils.book_new();
+  const today=new Date().toISOString().slice(0,10);
+
+  // ── 시트1: 재고현황 (실사 업로드용 형식) ──────────────────
+  // 행1~2: 메타 (날짜, 주기) — 사용자가 수정 후 업로드
+  // 행3: 안내
+  // 행4: 헤더
+  // 행5~: 데이터
+  const ws1Data = [
+    ['날짜', today, '주기', '학기간', '', '※ 날짜·주기 수정 후 업로드하면 해당 시점 실사로 저장됩니다'],
+    [],
+    ['※ 수치를 수정하고 저장 후 프로그램에서 불러오기 하세요. A열(날짜)·D열(주기) 값이 실사 기준이 됩니다.'],
+    ['품목', ...BRANCHES, '분원합계', '전체합계(분원+총무보관)'],
+    ...ITEMS.map(item=>{
+      const branchSum=ALL_BRANCHES_NO_HQ.reduce((s,b)=>s+getStock(b,item),0);
+      const baronStock=getStock('총무보관',item);
+      return [item,...BRANCHES.map(b=>getStock(b,item)),branchSum,branchSum+baronStock];
+    })
+  ];
+  const ws1=XLSX.utils.aoa_to_sheet(ws1Data);
+  ws1['!cols']=[{wch:16},...BRANCHES.map(()=>({wch:10})),{wch:10},{wch:16}];
+  // 날짜·주기 셀 강조 (노란 배경은 xlsx 스타일 미지원이지만 병합으로 구분)
+  ws1['!merges']=[{s:{r:2,c:0},e:{r:2,c:9}}]; // 안내문 병합
+  XLSX.utils.book_append_sheet(wb,ws1,'재고현황_실사업로드용');
+  const ws2=XLSX.utils.aoa_to_sheet([['날짜','유형','품목','수량','분원','담당자','비고'],...[...DB.records].sort((a,b)=>b.date.localeCompare(a.date)).map(r=>[r.date,r.type,r.item,r.qty,r.branch||'',r.person||'',r.note||''])]);
+  ws2['!cols']=[{wch:13},{wch:8},{wch:16},{wch:8},{wch:10},{wch:10},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,ws2,'입출고이력');
+  const ws3=XLSX.utils.aoa_to_sheet([['날짜','주기','분원','확인자','특이사항',...ITEMS],...[...DB.audits].sort((a,b)=>b.date.localeCompare(a.date)).map(a=>[a.date,a.period,a.branch,a.person||'',a.note||'',...ITEMS.map(it=>a.data[it]??'')])]);
+  ws3['!cols']=[{wch:13},{wch:8},{wch:10},{wch:10},{wch:16},...ITEMS.map(()=>({wch:13}))];
+  XLSX.utils.book_append_sheet(wb,ws3,'실사내역');
+  XLSX.writeFile(wb,`바론_소모품관리_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('엑셀 내보내기 완료','success');
+}
+function exportJSON(){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(DB,null,2)],{type:'application/json'}));
+  a.download=`baron_inventory_${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); toast('JSON 백업 완료','success');
+}
+function triggerImport(){document.getElementById('import-input').click();}
+function doImport(e){
+  const file=e.target.files[0]; if(!file)return;
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(ext==='json'){
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const parsed=JSON.parse(ev.target.result);
+        if(!parsed.records||!parsed.audits)throw new Error();
+        if(!confirm(`JSON 불러오기: 입출고 ${parsed.records.length}건, 실사 ${parsed.audits.length}건\n현재 데이터가 교체됩니다. 계속하시겠습니까?`))return;
+        pushUndo(); DB=parsed; saveDB(); renderDashboard(); toast('JSON 불러오기 완료','success');
+      }catch{toast('파일 형식이 올바르지 않습니다','error');}
+    };
+    reader.readAsText(file);
+  } else if(ext==='xlsx'){
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const wb=XLSX.read(ev.target.result,{type:'array'});
+
+        // ── A. 재고현황_실사업로드용 시트 감지 ──────────────
+        const wsInv = wb.Sheets['재고현황_실사업로드용'];
+        if(wsInv){
+          const rows=XLSX.utils.sheet_to_json(wsInv,{header:1,defval:''});
+          // 행0: ['날짜', 날짜값, '주기', 주기값, ...]
+          const metaRow = rows[0]||[];
+          let rawDate = metaRow[1];
+          let auditDate = '';
+          // 엑셀 날짜 시리얼 숫자 처리 (숫자면 JS Date로 변환)
+          if (typeof rawDate === 'number') {
+            // 엑셀 시리얼: 1900-01-01 = 1 기준, JS epoch 변환
+            const excelEpoch = new Date(1899, 11, 30); // 1899-12-30
+            const ms = excelEpoch.getTime() + rawDate * 86400000;
+            const d = new Date(ms);
+            auditDate = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+          } else {
+            auditDate = String(rawDate||'').trim();
+          }
+          const auditPeriod = String(metaRow[3]||'학기간').trim();
+          if(!/^\d{4}-\d{2}-\d{2}$/.test(auditDate)){
+            toast(`날짜 형식 오류: "${auditDate}" — YYYY-MM-DD 형식으로 입력하세요`,'error'); return;
+          }
+          // 행3이 헤더 (품목, 바론, 장안, ...)
+          const headerRow = rows[3]||[];
+          const branchCols = headerRow.slice(1); // 바론,장안,...,분원합계,전체합계 순
+          // 실제 분원만 (합계 열 제외)
+          const validBranches = BRANCHES; // ['총무보관','장안',...,'바론']
+          // 기존 같은 날짜 실사 있으면 경고
+          const existDates = DB.audits.filter(a=>a.date===auditDate);
+          if(existDates.length>0){
+            if(!confirm(`${auditDate} 날짜의 실사 기록이 이미 ${existDates.length}건 있습니다.\n추가로 누적 저장합니다. 계속하시겠습니까?`))return;
+          }
+          // 데이터 행: 행4~ (품목, 바론수량, 장안수량, ...)
+          const dataRows = rows.slice(4).filter(r=>r[0]&&ITEMS.includes(String(r[0])));
+          // 분원별로 묶기
+          const branchDataMap = {}; // branch -> {item:qty}
+          validBranches.forEach(b=>{ branchDataMap[b]={}; });
+          dataRows.forEach(row=>{
+            const item=String(row[0]);
+            validBranches.forEach((branch,bi)=>{
+              const val=Number(row[bi+1]);
+              if(!isNaN(val)&&row[bi+1]!=='') branchDataMap[branch][item]=val;
+            });
+          });
+          // 실사 레코드 생성
+          pushUndo();
+          let addedCount=0;
+          validBranches.forEach(branch=>{
+            const data=branchDataMap[branch];
+            if(Object.keys(data).length===0)return;
+            DB.audits.push({id:uid(),date:auditDate,period:auditPeriod,branch,person:'엑셀업로드',note:'엑셀 재고현황 업로드',data});
+            addedCount++;
+          });
+          saveDB(); renderDashboard(); updateInventorySnapshotOptions();
+          toast(`실사 등록 완료: ${auditDate} (${auditPeriod}) · ${addedCount}개 분원`,'success');
+          return;
+        }
+
+        // ── B. 기존 입출고이력 시트 방식 (하위호환) ──────────
+        const ws=wb.Sheets['입출고이력'];
+        if(!ws){toast('인식 가능한 시트가 없습니다.\n"재고현황_실사업로드용" 또는 "입출고이력" 시트가 필요합니다','error');return;}
+        const rows=XLSX.utils.sheet_to_json(ws,{header:1});
+        const newRecords=[];
+        for(let i=1;i<rows.length;i++){
+          const[date,type,item,qty,branch,person,note]=rows[i];
+          if(!date||!type||!item||!qty)continue;
+          newRecords.push({id:uid(),date:String(date),type:String(type),item:String(item),qty:Number(qty),branch:String(branch||''),person:String(person||''),note:String(note||'')});
+        }
+        const ws3=wb.Sheets['실사내역']; const newAudits=[];
+        if(ws3){
+          const aRows=XLSX.utils.sheet_to_json(ws3,{header:1});
+          for(let i=1;i<aRows.length;i++){
+            const[date,period,branch,person,note,...itemQtys]=aRows[i];
+            if(!date||!branch)continue;
+            const data={};
+            ITEMS.forEach((it,idx)=>{if(itemQtys[idx]!==''&&itemQtys[idx]!==undefined)data[it]=Number(itemQtys[idx]);});
+            newAudits.push({id:uid(),date:String(date),period:String(period||''),branch:String(branch),person:String(person||''),note:String(note||''),data});
+          }
+        }
+        if(!confirm(`입출고이력 불러오기: ${newRecords.length}건\n현재 데이터가 교체됩니다. 계속하시겠습니까?`))return;
+        pushUndo(); DB={records:newRecords,audits:newAudits}; saveDB(); renderDashboard(); toast('엑셀 불러오기 완료','success');
+      }catch(err){toast('엑셀 파일을 읽을 수 없습니다','error');console.error(err);}
+    };
+    reader.readAsArrayBuffer(file);
+  }
+  e.target.value='';
+}
+
+// ─── 기준값 설정 ──────────────────────────────────────────
+function openThreshModal() {
+  document.getElementById('alert-thresh-body').innerHTML = ITEMS.map(item => {
+    const key = item.replace(/ /g,'_');
+    const av = DB.alertThresh[item]||0;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px">'
+      +'<label style="font-size:12.5px;flex:1">'+item+'</label>'
+      +'<input type="number" id="at-'+key+'" value="'+av+'" min="0" style="width:90px;text-align:right;padding:5px 8px;border:1.5px solid #e2e6ef;border-radius:6px;font-size:13px;font-family:inherit">'
+      +'<span style="font-size:11px;color:#7a8499">개</span></div>';
+  }).join('');
+  document.getElementById('radar-thresh-body').innerHTML = ITEMS.map(item => {
+    const key = item.replace(/ /g,'_');
+    const rv = DB.radarThresh[item]||1;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px">'
+      +'<label style="font-size:12.5px;flex:1">'+item+'</label>'
+      +'<input type="number" id="rt-'+key+'" value="'+rv+'" min="1" style="width:90px;text-align:right;padding:5px 8px;border:1.5px solid #e2e6ef;border-radius:6px;font-size:13px;font-family:inherit">'
+      +'<span style="font-size:11px;color:#7a8499">개</span></div>';
+  }).join('');
+  document.getElementById('thresh-modal').classList.add('open');
+}
+function saveThresh() {
+  ITEMS.forEach(item => {
+    const key = item.replace(/ /g,'_');
+    const aVal = parseInt(document.getElementById('at-'+key)?.value);
+    const rVal = parseInt(document.getElementById('rt-'+key)?.value);
+    if (!isNaN(aVal)) DB.alertThresh[item] = aVal;
+    if (!isNaN(rVal) && rVal > 0) DB.radarThresh[item] = rVal;
+  });
+  saveDB(); closeModal('thresh-modal'); renderDashboard();
+  toast('기준값 저장 완료','success');
+}
+
+// ─── Toast & utils ────────────────────────────────────────
+function toast(msg,type=''){
+  const wrap=document.getElementById('toast-wrap');
+  const el=document.createElement('div');
+  el.className='toast '+(type||'');
+  el.innerHTML=(type==='success'?'✅ ':type==='error'?'❌ ':'ℹ️ ')+msg;
+  wrap.appendChild(el);
+  setTimeout(()=>el.remove(),3000);
+}
+
+function setTodayBadge(){
+  const d=new Date(); const days=['일','월','화','수','목','금','토'];
+  document.getElementById('today-badge').textContent=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} (${days[d.getDay()]})`;
+}
+
+// ─── Boot ─────────────────────────────────────────────────
+loadDB(); initSelects(); setTodayBadge(); renderDashboard(); updateInventorySnapshotOptions(); cloudLoad();
+['audit-modal','edit-modal','thresh-modal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){if(e.target===this)closeModal(id);});
+});
+document.getElementById('audit-branch').addEventListener('change', renderAuditInput);
+</script>
+</body>
+</html>

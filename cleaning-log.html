@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>바론 청소관리대장</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+  :root{
+    --navy:#24467D;
+    --logobg:#2B2E33;
+    --teal:#2FA88F;
+    --teal-dark:#22836E;
+    --gold:#BF8F00;
+    --red:#C0392B;
+    --amber:#D98A1C;
+    --green:#2F9E44;
+    --purple:#6D4FC2;
+    --bg:#F3F5F6;
+    --card:#FFFFFF;
+    --border:#E1E4EA;
+    --text:#1B1F27;
+    --muted:#6B7280;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:"Pretendard","Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+
+  .topbar{
+    background:var(--navy);color:#fff;padding:18px 28px;
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-badge{width:40px;height:40px;border-radius:10px;background:var(--logobg);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .brand-badge svg{width:20px;height:27px;}
+  .brand h1{font-size:17px;margin:0;font-weight:800;letter-spacing:-0.3px;}
+  .brand p{margin:0;font-size:12px;color:#B9C4DC;}
+
+  .upload-wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .btn{
+    background:var(--teal);color:#fff;border:none;font-weight:700;font-size:13px;
+    padding:10px 16px;border-radius:999px;cursor:pointer;
+  }
+  .btn:hover{background:var(--teal-dark);}
+  .btn.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);}
+  .btn.light{background:#fff;color:var(--navy);}
+  .file-status{font-size:12px;color:#CBD5EA;}
+  #fileInput{display:none;}
+
+  .tabs{display:flex;gap:6px;padding:14px 28px 0;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+  .tab-btn{border:none;background:transparent;padding:12px 18px;font-size:14px;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;border-radius:8px 8px 0 0;}
+  .tab-btn.active{color:var(--navy);border-bottom-color:var(--teal);background:var(--card);}
+
+  main{padding:24px 28px 60px;max-width:1280px;margin:0 auto;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .empty{text-align:center;padding:60px 20px;color:var(--muted);}
+  .empty .icon{font-size:36px;margin-bottom:8px;}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:18px;}
+  .card h3{margin:0 0 14px;font-size:14px;color:var(--navy);}
+
+  .field-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;}
+  .field{display:flex;flex-direction:column;gap:5px;min-width:160px;}
+  .field label{font-size:12px;font-weight:700;color:var(--muted);}
+  .field input, .field select, .field textarea{
+    border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{outline:2px solid var(--teal);}
+
+  .checklist-columns{display:grid;grid-template-columns:1fr 1fr;gap:0 32px;}
+  @media (max-width:800px){ .checklist-columns{grid-template-columns:1fr;} }
+  .checklist-col{min-width:0;}
+
+  .section-title{font-size:13px;font-weight:800;color:var(--navy);margin:20px 0 10px;padding-top:14px;border-top:1px solid var(--border);}
+  .checklist-col > .section-title:first-child{margin-top:0;padding-top:0;border-top:none;}
+  .item-row{padding:12px 0;border-bottom:1px solid var(--border);}
+  .item-row:last-child{border-bottom:none;}
+  .item-name{font-size:13px;font-weight:700;margin-bottom:8px;}
+  .item-name .zone{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;}
+  .toggle-group{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
+  .toggle-btn{
+    border:1px solid var(--border);background:#fff;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;
+    color:var(--muted);cursor:pointer;
+  }
+  .toggle-btn.sel-우수, .toggle-btn.sel-완료{background:var(--green);color:#fff;border-color:var(--green);}
+  .toggle-btn.sel-양호{background:#8FCB3D;color:#fff;border-color:#8FCB3D;}
+  .toggle-btn.sel-보통{background:var(--gold);color:#fff;border-color:var(--gold);}
+  .toggle-btn.sel-미흡{background:var(--amber);color:#fff;border-color:var(--amber);}
+  .toggle-btn.sel-불량, .toggle-btn.sel-미완료{background:var(--red);color:#fff;border-color:var(--red);}
+  .item-notes{display:flex;gap:8px;flex-wrap:wrap;}
+  .item-notes input{flex:1;min-width:140px;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;font-family:inherit;}
+
+  .save-bar{display:flex;justify-content:flex-end;gap:10px;margin-top:10px;}
+
+  .stat-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px;}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;flex:1;min-width:140px;}
+  .stat-card .num{font-size:24px;font-weight:800;color:var(--navy);}
+  .stat-card.warn .num{color:var(--amber);}
+  .stat-card.danger .num{color:var(--red);}
+  .stat-card .label{font-size:12px;color:var(--muted);margin-top:2px;}
+
+  .filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+  .chip{border:1px solid var(--border);background:var(--card);padding:7px 14px;border-radius:999px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;}
+  .chip.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .search-input{border:1px solid var(--border);border-radius:999px;padding:8px 16px;font-size:13px;min-width:180px;font-family:inherit;}
+
+  table{width:100%;border-collapse:collapse;background:var(--card);border-radius:var(--radius);overflow:hidden;}
+  thead th{background:var(--navy);color:#fff;font-size:12px;text-align:left;padding:10px 12px;font-weight:700;}
+  tbody td{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:top;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#F8FAFD;}
+
+  .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;color:#fff;}
+  .badge.우수, .badge.완료{background:var(--green);}
+  .badge.양호{background:#8FCB3D;}
+  .badge.보통{background:var(--gold);}
+  .badge.미흡{background:var(--amber);}
+  .badge.불량, .badge.미완료{background:var(--red);}
+  .badge.gray{background:#9AA1AC;}
+  .badge.role-용역{background:var(--navy);}
+  .badge.role-분원{background:var(--purple);}
+
+  .role-perf-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px;}
+  @media (max-width:700px){ .role-perf-grid{grid-template-columns:1fr;} }
+  .role-perf-card{border:1px solid var(--border);border-radius:12px;padding:16px;}
+  .role-perf-card h4{margin:0 0 10px;font-size:13px;color:var(--navy);}
+  .role-perf-bar{display:flex;height:22px;border-radius:6px;overflow:hidden;margin-bottom:8px;}
+  .role-perf-bar span{display:block;height:100%;}
+  .role-perf-legend{display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--muted);}
+  .role-perf-legend .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle;}
+
+  .warn-banner{background:#FDF3E4;border:1px solid #F0D9AE;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#8A5A0A;}
+  .warn-banner b{color:#B4460E;}
+
+  footer{text-align:center;font-size:11px;color:var(--muted);padding:20px;}
+
+  @media (max-width:640px){
+    .topbar,.tabs,main{padding-left:16px;padding-right:16px;}
+    thead{display:none;}
+    table, tbody, tr, td{display:block;width:100%;}
+    tbody tr{border:1px solid var(--border);border-radius:10px;margin-bottom:10px;padding:8px;}
+    tbody td{border-bottom:none;padding:6px 8px;}
+    tbody td::before{content:attr(data-label);display:block;font-size:10px;color:var(--muted);font-weight:700;margin-bottom:2px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="https://varon2026.github.io/varon-links/" class="brand" style="text-decoration:none;color:inherit;cursor:pointer;" title="바론링크로 돌아가기">
+    <div class="brand-badge"><svg viewBox="0 0 20 28" fill="none"><path d="M13 0H20L7 28H0L13 0Z" fill="#D9A62E"/></svg></div>
+    <div>
+      <h1>바론 청소관리대장</h1>
+      <p>점검사항 입력 · 점검이력 · 대시보드 · 에어컨 관리이력 · ← 바론링크로 돌아가기</p>
+    </div>
+  </a>
+  <div class="upload-wrap">
+    <span class="file-status" id="fileStatus">서버에서 이전 기록을 불러오는 중...</span>
+    <button class="btn ghost" id="uploadBtn">📥 과거기록 불러오기(선택)</button>
+    <input type="file" id="fileInput" accept=".xlsx,.xls">
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-view="input">점검사항 입력</button>
+  <button class="tab-btn" data-view="history">점검이력</button>
+  <button class="tab-btn" data-view="dashboard">대시보드</button>
+  <button class="tab-btn" data-view="aircon">에어컨 관리이력</button>
+</div>
+
+<main>
+
+  <!-- ===================== 점검사항 입력 ===================== -->
+  <section class="view active" id="view-input">
+    <div class="card">
+      <h3>점검 기본 정보</h3>
+      <div class="field-row">
+        <div class="field">
+          <label>소속분원</label>
+          <select id="inputBranch"></select>
+        </div>
+        <div class="field">
+          <label>점검일자</label>
+          <input type="date" id="inputDate">
+        </div>
+        <div class="field">
+          <label>확인자</label>
+          <input type="text" id="inputChecker" placeholder="이름 입력">
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="itemListCard">
+      <h3>점검사항 입력</h3>
+      <div id="itemListArea"></div>
+    </div>
+
+    <div class="save-bar">
+      <button class="btn" id="saveCheckBtn">체크 저장</button>
+    </div>
+  </section>
+
+  <!-- ===================== 점검이력 ===================== -->
+  <section class="view" id="view-history">
+    <div id="history-empty" class="empty">
+      <div class="icon">📋</div>
+      <p><b>이력이 없습니다.</b><br>점검사항 입력 탭에서 첫 점검을 등록해보세요.</p>
+    </div>
+    <div id="history-content" style="display:none;">
+      <div class="filter-row">
+        <button class="chip active" data-branch="전체">전체</button>
+      </div>
+      <div class="filter-row" style="justify-content:space-between;">
+        <input class="search-input" id="historySearch" placeholder="항목명 또는 확인자 검색">
+        <button class="btn light" id="historyExportBtn" style="border:1px solid var(--navy);color:var(--navy);">⬇ 엑셀로 내보내기</button>
+      </div>
+      <table><thead><tr>
+        <th>점검일자</th><th>소속분원</th><th>담당</th><th>구역</th><th>세부항목</th><th>결과</th><th>특이사항</th><th>조치사항</th><th>확인자</th>
+      </tr></thead><tbody id="historyBody"></tbody></table>
+    </div>
+  </section>
+
+  <!-- ===================== 대시보드 ===================== -->
+  <section class="view" id="view-dashboard">
+    <div id="dashboard-empty" class="empty">
+      <div class="icon">📊</div>
+      <p><b>이력이 없습니다.</b><br>점검사항 입력 탭에서 첫 점검을 등록해보세요.</p>
+    </div>
+    <div id="dashboard-content" style="display:none;">
+
+      <div class="filter-row" style="justify-content:space-between;">
+        <div class="filter-row" id="dashBranchChips" style="margin-bottom:0;"></div>
+        <div class="filter-row" style="margin-bottom:0;">
+          <label style="font-size:12px;color:var(--muted);">점검주기(일)</label>
+          <input type="number" id="cycleDaysInput" min="1" style="width:60px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:12px;">
+          <button class="btn light" id="cycleDaysSaveBtn" style="border:1px solid var(--navy);color:var(--navy);padding:6px 12px;">저장</button>
+        </div>
+      </div>
+
+      <div id="uncheckedWarning"></div>
+
+      <div class="stat-row" id="dashStats"></div>
+
+      <div class="card">
+        <h3>담당구분별 실적 (용역 vs 분원)</h3>
+        <div class="role-perf-grid" id="rolePerfGrid"></div>
+      </div>
+
+      <div class="card">
+        <h3>⚠️ 지속적으로 결과가 좋지 않은 항목</h3>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">같은 분원의 같은 항목에서 미흡·불량·미완료가 2회 이상 반복된 경우입니다.</div>
+        <table><thead><tr>
+          <th>소속분원</th><th>담당</th><th>세부항목</th><th>반복횟수</th><th>최근 결과</th><th>최근 점검일</th>
+        </tr></thead><tbody id="dashPersistentBody"></tbody></table>
+      </div>
+
+      <div class="card">
+        <h3>최근 미흡·불량 항목 (최신순)</h3>
+        <table><thead><tr>
+          <th>점검일자</th><th>소속분원</th><th>세부항목</th><th>결과</th><th>특이사항</th>
+        </tr></thead><tbody id="dashIssueBody"></tbody></table>
+      </div>
+
+      <div class="card">
+        <h3>분원별 최근 점검일</h3>
+        <table><thead><tr><th>소속분원</th><th>최근 점검일</th><th>최근 확인자</th><th>상태</th></tr></thead><tbody id="dashRecentBody"></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 에어컨 관리이력 ===================== -->
+  <section class="view" id="view-aircon">
+    <div class="card">
+      <h3>➕ 에어컨 작업 기록 등록</h3>
+      <div class="field-row">
+        <div class="field">
+          <label>소속분원</label>
+          <select id="acBranch"></select>
+        </div>
+        <div class="field">
+          <label>위치/호기</label>
+          <input type="text" id="acLocation" placeholder="예: A강의실, 2층 복도">
+        </div>
+        <div class="field">
+          <label>작업유형</label>
+          <select id="acType">
+            <option value="필터청소">필터청소</option>
+            <option value="분해세척">분해세척</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>작업일자</label>
+          <input type="date" id="acDate">
+        </div>
+        <div class="field">
+          <label>담당자/업체</label>
+          <input type="text" id="acWorker" placeholder="예: 총무팀 김OO / OO설비">
+        </div>
+      </div>
+      <div class="field" style="min-width:100%;margin-bottom:14px;">
+        <label>비고</label>
+        <input type="text" id="acNote" placeholder="특이사항(선택)">
+      </div>
+      <button class="btn" id="acSaveBtn">등록</button>
+    </div>
+
+    <div class="card">
+      <h3>분원별 최근 작업일 요약</h3>
+      <table><thead><tr><th>소속분원</th><th>최근 필터청소일</th><th>최근 분해세척일</th></tr></thead><tbody id="acSummaryBody"></tbody></table>
+    </div>
+
+    <div class="card">
+      <div class="filter-row" id="acBranchChips"></div>
+      <div class="filter-row" style="justify-content:space-between;">
+        <input class="search-input" id="acSearch" placeholder="위치/담당자 검색">
+        <button class="btn light" id="acExportBtn" style="border:1px solid var(--navy);color:var(--navy);">⬇ 엑셀로 내보내기</button>
+      </div>
+      <table><thead><tr>
+        <th>작업일자</th><th>소속분원</th><th>위치/호기</th><th>작업유형</th><th>담당자/업체</th><th>비고</th>
+      </tr></thead><tbody id="acBody"></tbody></table>
+    </div>
+  </section>
+
+</main>
+
+<footer>바론네트웍스(주) 총무팀 · 청소관리대장 v3.0 · 체크 저장 시 서버에 자동 반영됩니다</footer>
+
+<script>
+const BRANCHES = ["장안","서수원","수원","운정1","운정2","남동탄","바론"];
+const STATUS5 = ["우수","양호","보통","미흡","불량"];
+const DONE2 = ["완료","미완료"];
+const ISSUE_VALUES = ["미흡","불량","미완료"];
+
+const ITEM_MASTER = [
+  {id:"YS-01", role:"용역", zone:"강의실, 상담실, 교무실", name:"바닥청소"},
+  {id:"YS-02", role:"용역", zone:"강의실, 상담실, 교무실", name:"책상표면"},
+  {id:"YS-03", role:"용역", zone:"복도",                    name:"바닥청소"},
+  {id:"YS-04", role:"용역", zone:"공용",                    name:"쓰레기배출"},
+  {id:"YS-05", role:"용역", zone:"공용",                    name:"쓰레기통 주변 정리"},
+  {id:"YS-06", role:"용역", zone:"유리·창틀",                name:"내부유리창"},
+  {id:"YS-07", role:"용역", zone:"복도",                    name:"몰딩오염"},
+  {id:"YS-08", role:"용역", zone:"유리·창틀",                name:"창틀청소"},
+  {id:"BW-01", role:"분원", zone:"강의실 모니터·PC",          name:"모니터먼지"},
+  {id:"BW-02", role:"분원", zone:"강의실 모니터·PC",          name:"PC내부먼지"},
+  {id:"BW-03", role:"분원", zone:"강의실 모니터·PC",          name:"콘센트먼지"},
+  {id:"BW-04", role:"분원", zone:"교무실",                   name:"책상청소 및 정리"},
+  {id:"BW-05", role:"분원", zone:"위생·미관",                name:"거미줄제거"},
+  {id:"BW-06", role:"분원", zone:"위생·미관",                name:"스티커자국제거"},
+  {id:"BW-07", role:"분원", zone:"탕비실",                   name:"테이블 및 냉장고"},
+  {id:"BW-08", role:"분원", zone:"소화기, 책장",              name:"먼지청소"},
+  {id:"BR-01", role:"자체", zone:"바론",         name:"바닥"},
+  {id:"BR-02", role:"자체", zone:"바론",         name:"책상"},
+  {id:"BR-03", role:"자체", zone:"바론",         name:"베란다"},
+  {id:"BR-04", role:"자체", zone:"바론",         name:"창틀"},
+  {id:"BR-05", role:"자체", zone:"바론",         name:"안쪽유리"},
+  {id:"BR-06", role:"자체", zone:"바론",         name:"바깥쪽유리"},
+  {id:"BR-07", role:"자체", zone:"바론",         name:"탕비실"},
+  {id:"BR-08", role:"자체", zone:"바론",         name:"회의실"},
+  {id:"BR-09", role:"자체", zone:"바론",         name:"쓰레기배출"},
+  {id:"BR-10", role:"자체", zone:"바론",         name:"재활용배출"},
+];
+
+const state = { history: [], cycleDays: 7, aircon: [] };
+const current = { history: [], aircon: [] };
+let historyBranchFilter = "전체";
+let historySearchTerm = "";
+let dashBranchFilter = "전체";
+let acBranchFilter = "전체";
+let acSearchTerm = "";
+let pendingChecks = {};
+
+const firebaseConfig = {
+  apiKey: "AIzaSyACokruLFwbkCpxriOdQgVZAQfryYBmUxM",
+  authDomain: "baron-shuttle-ops.firebaseapp.com",
+  projectId: "baron-shuttle-ops",
+  storageBucket: "baron-shuttle-ops.firebasestorage.app",
+  messagingSenderId: "278466071248",
+  appId: "1:278466071248:web:e22df780d05e6b46772cd5"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+function sanitize(rows){
+  const clean = JSON.parse(JSON.stringify(rows || []));
+  return clean.map(row => {
+    const out = {};
+    Object.keys(row).forEach(k => { if(k) out[k] = row[k]; });
+    return out;
+  });
+}
+
+async function saveHistoryToServer(){
+  await db.collection('cleaning_data').doc('history').set({
+    rows: sanitize(state.history),
+    updatedAt: new Date().toISOString()
+  });
+}
+async function saveAirconToServer(){
+  await db.collection('cleaning_data').doc('aircon').set({
+    rows: sanitize(state.aircon),
+    updatedAt: new Date().toISOString()
+  });
+}
+async function saveSettingsToServer(){
+  await db.collection('cleaning_data').doc('settings').set({ cycleDays: state.cycleDays });
+}
+
+async function loadHistoryFromServer(){
+  try{
+    const [histDoc, acDoc, settingsDoc] = await Promise.all([
+      db.collection('cleaning_data').doc('history').get(),
+      db.collection('cleaning_data').doc('aircon').get(),
+      db.collection('cleaning_data').doc('settings').get(),
+    ]);
+    state.history = histDoc.exists ? (histDoc.data().rows || []) : [];
+    state.aircon = acDoc.exists ? (acDoc.data().rows || []) : [];
+    state.cycleDays = settingsDoc.exists ? (settingsDoc.data().cycleDays || 7) : 7;
+    document.getElementById('fileStatus').textContent = state.history.length
+      ? `서버 기록 ${state.history.length}건 불러옴 (${new Date().toLocaleTimeString('ko-KR')})`
+      : "서버에 저장된 기록이 없습니다. 체크를 입력해보세요.";
+  }catch(err){
+    console.error(err);
+    document.getElementById('fileStatus').textContent = "서버 연결 실패: 새로고침 해보거나 콘솔을 확인해주세요";
+  }
+  document.getElementById('cycleDaysInput').value = state.cycleDays;
+  renderHistory();
+  renderDashboard();
+  renderAircon();
+}
+
+document.getElementById('uploadBtn').addEventListener('click', () => document.getElementById('fileInput').click());
+document.getElementById('fileInput').addEventListener('change', handleImportFile);
+document.getElementById('inputDate').valueAsDate = new Date();
+document.getElementById('acDate').valueAsDate = new Date();
+
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+  });
+});
+
+function handleImportFile(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  document.getElementById('fileStatus').textContent = "가져오는 중...";
+  const reader = new FileReader();
+  reader.onload = async (ev)=>{
+    try{
+      const wb = XLSX.read(ev.target.result, {type:'array', cellDates:true});
+      const sheet = wb.Sheets['청소점검이력'];
+      if(!sheet){ throw new Error("'청소점검이력' 시트를 찾을 수 없습니다"); }
+      const aoa = XLSX.utils.sheet_to_json(sheet, {header:1, defval:""});
+      const headers = aoa[0] || [];
+      const dataRows = aoa.slice(2);
+      const imported = dataRows.map(row => {
+        const obj = {};
+        headers.forEach((h,i)=>{ if(h) obj[h] = row[i] !== undefined ? row[i] : ""; });
+        return obj;
+      }).filter(r => Object.values(r).some(v => String(v).trim() !== ""));
+
+      state.history = [...state.history, ...imported];
+      await saveHistoryToServer();
+      document.getElementById('fileStatus').textContent = `"${file.name}"에서 ${imported.length}건 가져와 서버에 반영됨`;
+      renderHistory();
+      renderDashboard();
+    }catch(err){
+      document.getElementById('fileStatus').textContent = "가져오기 실패: 형식을 확인해주세요";
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function toDate(v){
+  if(!v) return null;
+  if(v instanceof Date) return v;
+  const d = new Date(v);
+  return isNaN(d) ? null : d;
+}
+function fmtDate(v){
+  const d = toDate(v);
+  if(!d) return "-";
+  return d.toISOString().slice(0,10);
+}
+function daysBetween(dateStr){
+  const d = toDate(dateStr);
+  if(!d) return Infinity;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d0 = new Date(d); d0.setHours(0,0,0,0);
+  return Math.floor((today - d0) / 86400000);
+}
+
+/* ---------------- 점검사항 입력 ---------------- */
+function populateBranchSelect(){
+  const sel = document.getElementById('inputBranch');
+  sel.innerHTML = BRANCHES.map(b => `<option value="${b}">${b}</option>`).join('');
+  sel.addEventListener('change', renderItemChecklist);
+
+  const acSel = document.getElementById('acBranch');
+  acSel.innerHTML = BRANCHES.map(b => `<option value="${b}">${b}</option>`).join('');
+}
+
+function activeItemsForBranch(branch){
+  if(branch === '바론'){
+    return { role:'자체', groups: [ ['바론 자체점검', ITEM_MASTER.filter(it => it.role === '자체')] ] };
+  }
+  return {
+    role:'용역분원',
+    groups: [
+      ['용역담당', ITEM_MASTER.filter(it => it.role === '용역')],
+      ['분원담당', ITEM_MASTER.filter(it => it.role === '분원')],
+    ]
+  };
+}
+
+function renderItemChecklist(){
+  const branch = document.getElementById('inputBranch').value || BRANCHES[0];
+  const { role, groups } = activeItemsForBranch(branch);
+  pendingChecks = {};
+
+  const area = document.getElementById('itemListArea');
+  area.innerHTML = "";
+  area.className = role === '자체' ? '' : 'checklist-columns';
+
+  groups.forEach(([groupName, items]) => {
+    if(items.length === 0) return;
+    const col = document.createElement('div');
+    col.className = 'checklist-col';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'section-title';
+    titleEl.textContent = groupName;
+    col.appendChild(titleEl);
+
+    items.forEach((it, idx) => {
+      const isLastInGroup = idx === items.length - 1;
+      const useDone = role === '자체';
+      const options = useDone ? DONE2 : STATUS5;
+
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.innerHTML = `
+        <div class="item-name">${it.name}<span class="zone">${it.zone}</span></div>
+        <div class="toggle-group" data-item="${it.id}">
+          ${options.map(o => `<button type="button" class="toggle-btn" data-value="${o}">${o}</button>`).join('')}
+        </div>
+        ${useDone
+          ? (isLastInGroup ? `<div class="item-notes"><input type="text" placeholder="오늘의 종합 특이사항(선택)" data-field="note" /></div>` : '')
+          : `<div class="item-notes">
+               <input type="text" placeholder="특이사항(선택)" data-field="note" />
+               <input type="text" placeholder="조치사항(선택)" data-field="action" />
+             </div>`
+        }
+      `;
+      col.appendChild(row);
+
+      pendingChecks[it.id] = { item: it, status: '', note: '', action: '' };
+
+      row.querySelectorAll('.toggle-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          row.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove(...options.map(o=>'sel-'+o)));
+          btn.classList.add('sel-' + btn.dataset.value);
+          pendingChecks[it.id].status = btn.dataset.value;
+        });
+      });
+      const noteInput = row.querySelector('[data-field="note"]');
+      if(noteInput) noteInput.addEventListener('input', (e) => { pendingChecks[it.id].note = e.target.value; });
+      const actionInput = row.querySelector('[data-field="action"]');
+      if(actionInput) actionInput.addEventListener('input', (e) => { pendingChecks[it.id].action = e.target.value; });
+    });
+
+    area.appendChild(col);
+  });
+}
+
+document.getElementById('saveCheckBtn').addEventListener('click', async () => {
+  const branch = document.getElementById('inputBranch').value;
+  const date = document.getElementById('inputDate').value || fmtDate(new Date());
+  const checker = document.getElementById('inputChecker').value.trim();
+  if(!checker){ alert('확인자를 입력해주세요.'); return; }
+
+  const allItems = Object.values(pendingChecks);
+  const missing = allItems.filter(({status}) => !status);
+  if(missing.length > 0){
+    alert(`아직 체크 안 된 항목이 ${missing.length}개 있습니다.\n\n- ${missing.map(m => m.item.name + '(' + m.item.zone + ')').join('\n- ')}\n\n전체 항목을 다 체크해야 저장할 수 있습니다.`);
+    return;
+  }
+
+  const role = branch === '바론' ? '자체' : null;
+  const newRows = [];
+  allItems.forEach(({item, status, note, action}) => {
+    const roleForItem = role || item.role;
+    newRows.push({
+      '점검일자': date,
+      '소속분원': branch,
+      '담당구분': roleForItem,
+      '항목ID': item.id,
+      '구역': item.zone,
+      '세부항목': item.name,
+      '결과상태': STATUS5.includes(status) ? status : '',
+      '완료여부': DONE2.includes(status) ? status : '',
+      '특이사항': note || '',
+      '조치사항': action || '',
+      '확인자': checker,
+      '비고': '',
+    });
+  });
+
+  const btn = document.getElementById('saveCheckBtn');
+  btn.textContent = '저장 중...'; btn.disabled = true;
+  state.history.push(...newRows);
+  try{
+    await saveHistoryToServer();
+    document.getElementById('inputChecker').value = '';
+    renderItemChecklist();
+    renderHistory();
+    renderDashboard();
+    document.getElementById('fileStatus').textContent = `${newRows.length}건 저장 완료 (${new Date().toLocaleTimeString('ko-KR')})`;
+  }catch(err){
+    console.error(err);
+    alert('서버 저장에 실패했습니다. 콘솔을 확인해주세요.');
+  }finally{
+    btn.textContent = '체크 저장'; btn.disabled = false;
+  }
+});
+
+/* ---------------- 점검이력 ---------------- */
+function renderBranchFilterChips(){
+  const wrap = document.querySelector('#view-history .filter-row');
+  wrap.innerHTML = "";
+  ["전체", ...BRANCHES].forEach(b => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (b === historyBranchFilter ? ' active' : '');
+    chip.textContent = b;
+    chip.addEventListener('click', () => { historyBranchFilter = b; renderHistory(); });
+    wrap.appendChild(chip);
+  });
+}
+
+document.getElementById('historySearch').addEventListener('input', (e) => {
+  historySearchTerm = e.target.value.trim().toLowerCase();
+  renderHistory();
+});
+
+function renderHistory(){
+  const has = state.history.length > 0;
+  document.getElementById('history-empty').style.display = has ? 'none' : 'block';
+  document.getElementById('history-content').style.display = has ? 'block' : 'none';
+  if(!has) return;
+
+  renderBranchFilterChips();
+
+  let rows = [...state.history].sort((a,b) => (toDate(b['점검일자'])||0) - (toDate(a['점검일자'])||0));
+  if(historyBranchFilter !== "전체") rows = rows.filter(r => r['소속분원'] === historyBranchFilter);
+  if(historySearchTerm){
+    rows = rows.filter(r =>
+      String(r['세부항목']||'').toLowerCase().includes(historySearchTerm) ||
+      String(r['확인자']||'').toLowerCase().includes(historySearchTerm)
+    );
+  }
+  current.history = rows;
+
+  document.getElementById('historyBody').innerHTML = rows.map(r => {
+    const statusVal = r['결과상태'] || r['완료여부'] || '-';
+    const badgeClass = STATUS5.includes(statusVal) || DONE2.includes(statusVal) ? statusVal : 'gray';
+    const roleVal = r['담당구분'] || '-';
+    return `<tr>
+      <td data-label="점검일자">${fmtDate(r['점검일자'])}</td>
+      <td data-label="소속분원">${r['소속분원']||'-'}</td>
+      <td data-label="담당">${roleVal!=='-'?`<span class="badge role-${roleVal}">${roleVal}</span>`:'-'}</td>
+      <td data-label="구역">${r['구역']||'-'}</td>
+      <td data-label="세부항목">${r['세부항목']||'-'}</td>
+      <td data-label="결과"><span class="badge ${badgeClass}">${statusVal}</span></td>
+      <td data-label="특이사항">${r['특이사항']||'-'}</td>
+      <td data-label="조치사항">${r['조치사항']||'-'}</td>
+      <td data-label="확인자">${r['확인자']||'-'}</td>
+    </tr>`;
+  }).join('');
+}
+
+document.getElementById('historyExportBtn').addEventListener('click', () => {
+  if(current.history.length === 0){ alert('내보낼 자료가 없습니다.'); return; }
+  const ws = XLSX.utils.json_to_sheet(current.history);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '청소점검이력');
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `청소점검이력_${stamp}.xlsx`);
+});
+
+/* ---------------- 대시보드 ---------------- */
+document.getElementById('cycleDaysSaveBtn').addEventListener('click', async () => {
+  const val = Number(document.getElementById('cycleDaysInput').value) || 7;
+  state.cycleDays = val;
+  await saveSettingsToServer();
+  renderDashboard();
+  alert(`점검주기를 ${val}일로 저장했습니다.`);
+});
+
+function renderDashBranchChips(){
+  const wrap = document.getElementById('dashBranchChips');
+  wrap.innerHTML = "";
+  ["전체", ...BRANCHES].forEach(b => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (b === dashBranchFilter ? ' active' : '');
+    chip.textContent = b;
+    chip.addEventListener('click', () => { dashBranchFilter = b; renderDashboard(); });
+    wrap.appendChild(chip);
+  });
+}
+
+function renderDashboard(){
+  const has = state.history.length > 0;
+  document.getElementById('dashboard-empty').style.display = has ? 'none' : 'block';
+  document.getElementById('dashboard-content').style.display = has ? 'block' : 'none';
+  if(!has) return;
+
+  renderDashBranchChips();
+
+  const allRows = [...state.history];
+  const rows = dashBranchFilter === '전체' ? allRows : allRows.filter(r => r['소속분원'] === dashBranchFilter);
+
+  // ---- 미점검 분원 경고 ----
+  const targetBranches = dashBranchFilter === '전체' ? BRANCHES : [dashBranchFilter];
+  const uncheckedList = targetBranches.filter(b => {
+    const branchRows = allRows.filter(r => r['소속분원'] === b);
+    if(branchRows.length === 0) return true;
+    const latest = branchRows.sort((a,b2)=>(toDate(b2['점검일자'])||0)-(toDate(a['점검일자'])||0))[0];
+    return daysBetween(latest['점검일자']) > state.cycleDays;
+  });
+  document.getElementById('uncheckedWarning').innerHTML = uncheckedList.length
+    ? `<div class="warn-banner">⚠️ <b>${uncheckedList.join(', ')}</b> 분원이 최근 ${state.cycleDays}일 이내 점검 기록이 없습니다. 확인이 필요합니다.</div>`
+    : '';
+
+  // ---- 상단 통계 ----
+  const thisMonth = new Date().toISOString().slice(0,7);
+  const thisMonthCount = rows.filter(r => fmtDate(r['점검일자']).slice(0,7) === thisMonth).length;
+  const issueRows = rows.filter(r => ISSUE_VALUES.includes(r['결과상태'] || r['완료여부']));
+
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat-card"><div class="num">${rows.length}</div><div class="label">전체 점검 건수</div></div>
+    <div class="stat-card"><div class="num">${thisMonthCount}</div><div class="label">이번달 점검 건수</div></div>
+    <div class="stat-card danger"><div class="num">${issueRows.length}</div><div class="label">미흡·불량·미완료 건수</div></div>
+    <div class="stat-card warn"><div class="num">${uncheckedList.length}</div><div class="label">미점검 분원 (${state.cycleDays}일 기준)</div></div>
+  `;
+
+  // ---- 담당구분별 실적 ----
+  const perfGrid = document.getElementById('rolePerfGrid');
+  const roleColors = { '우수':'#2F9E44','양호':'#8FCB3D','보통':'#BF8F00','미흡':'#D98A1C','불량':'#C0392B' };
+  perfGrid.innerHTML = ['용역','분원'].map(role => {
+    const roleRows = rows.filter(r => r['담당구분'] === role);
+    const total = roleRows.length;
+    const counts = STATUS5.map(s => ({ s, n: roleRows.filter(r => r['결과상태'] === s).length }));
+    const goodRate = total ? Math.round((counts[0].n + counts[1].n) / total * 100) : 0;
+    const badRate = total ? Math.round((counts[3].n + counts[4].n) / total * 100) : 0;
+    return `
+      <div class="role-perf-card">
+        <h4><span class="badge role-${role}">${role}담당</span> — 점검 ${total}건, 우수·양호 ${goodRate}% / 미흡·불량 ${badRate}%</h4>
+        <div class="role-perf-bar">
+          ${total ? counts.map(c => c.n ? `<span style="width:${c.n/total*100}%;background:${roleColors[c.s]}"></span>` : '').join('') : '<span style="width:100%;background:#E1E4EA"></span>'}
+        </div>
+        <div class="role-perf-legend">
+          ${counts.map(c => `<span><span class="dot" style="background:${roleColors[c.s]}"></span>${c.s} ${c.n}</span>`).join('')}
+        </div>
+      </div>`;
+  }).join('');
+
+  // ---- 지속 문제 항목 ----
+  const groupMap = {};
+  rows.forEach(r => {
+    const val = r['결과상태'] || r['완료여부'];
+    if(!ISSUE_VALUES.includes(val)) return;
+    const key = (r['소속분원']||'') + '|' + (r['담당구분']||'') + '|' + (r['세부항목']||'');
+    if(!groupMap[key]) groupMap[key] = { branch:r['소속분원'], role:r['담당구분'], item:r['세부항목'], count:0, rows:[] };
+    groupMap[key].count++;
+    groupMap[key].rows.push(r);
+  });
+  const persistent = Object.values(groupMap)
+    .filter(g => g.count >= 2)
+    .sort((a,b) => b.count - a.count)
+    .slice(0, 15);
+  document.getElementById('dashPersistentBody').innerHTML = persistent.length ? persistent.map(g => {
+    const latest = g.rows.sort((a,b)=>(toDate(b['점검일자'])||0)-(toDate(a['점검일자'])||0))[0];
+    const val = latest['결과상태'] || latest['완료여부'];
+    return `<tr>
+      <td data-label="소속분원">${g.branch}</td>
+      <td data-label="담당">${g.role?`<span class="badge role-${g.role}">${g.role}</span>`:'-'}</td>
+      <td data-label="세부항목">${g.item}</td>
+      <td data-label="반복횟수"><b>${g.count}회</b></td>
+      <td data-label="최근 결과"><span class="badge ${val}">${val}</span></td>
+      <td data-label="최근 점검일">${fmtDate(latest['점검일자'])}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="6" style="text-align:center;color:var(--muted);">반복되는 문제 항목이 없습니다.</td></tr>`;
+
+  // ---- 최근 미흡·불량 목록 ----
+  const sortedIssues = issueRows.sort((a,b) => (toDate(b['점검일자'])||0) - (toDate(a['점검일자'])||0)).slice(0, 20);
+  document.getElementById('dashIssueBody').innerHTML = sortedIssues.length ? sortedIssues.map(r => {
+    const statusVal = r['결과상태'] || r['완료여부'];
+    return `<tr>
+      <td data-label="점검일자">${fmtDate(r['점검일자'])}</td>
+      <td data-label="소속분원">${r['소속분원']||'-'}</td>
+      <td data-label="세부항목">${r['세부항목']||'-'}</td>
+      <td data-label="결과"><span class="badge ${statusVal}">${statusVal}</span></td>
+      <td data-label="특이사항">${r['특이사항']||'-'}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="5" style="text-align:center;color:var(--muted);">최근 미흡·불량 항목이 없습니다.</td></tr>`;
+
+  // ---- 분원별 최근 점검일 ----
+  const recentBody = document.getElementById('dashRecentBody');
+  recentBody.innerHTML = targetBranches.map(b => {
+    const branchRows = allRows.filter(r => r['소속분원'] === b).sort((a,b2)=>(toDate(b2['점검일자'])||0)-(toDate(a['점검일자'])||0));
+    const latest = branchRows[0];
+    const overdue = !latest || daysBetween(latest['점검일자']) > state.cycleDays;
+    return `<tr>
+      <td data-label="소속분원">${b}</td>
+      <td data-label="최근점검일">${latest ? fmtDate(latest['점검일자']) : '기록 없음'}</td>
+      <td data-label="확인자">${latest ? (latest['확인자']||'-') : '-'}</td>
+      <td data-label="상태">${overdue ? `<span class="badge 불량">미점검</span>` : `<span class="badge 우수">정상</span>`}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------------- 에어컨 관리이력 ---------------- */
+document.getElementById('acSaveBtn').addEventListener('click', async () => {
+  const branch = document.getElementById('acBranch').value;
+  const location = document.getElementById('acLocation').value.trim();
+  const type = document.getElementById('acType').value;
+  const date = document.getElementById('acDate').value || fmtDate(new Date());
+  const worker = document.getElementById('acWorker').value.trim();
+  const note = document.getElementById('acNote').value.trim();
+  if(!location){ alert('위치/호기를 입력해주세요.'); return; }
+
+  const btn = document.getElementById('acSaveBtn');
+  btn.textContent = '저장 중...'; btn.disabled = true;
+  state.aircon.push({ '작업일자':date, '소속분원':branch, '위치':location, '작업유형':type, '담당자':worker, '비고':note });
+  try{
+    await saveAirconToServer();
+    document.getElementById('acLocation').value = '';
+    document.getElementById('acWorker').value = '';
+    document.getElementById('acNote').value = '';
+    renderAircon();
+    alert('저장되었습니다.');
+  }catch(err){
+    console.error(err);
+    alert('저장 실패: 콘솔을 확인해주세요.');
+  }finally{
+    btn.textContent = '등록'; btn.disabled = false;
+  }
+});
+
+function renderAcBranchChips(){
+  const wrap = document.getElementById('acBranchChips');
+  wrap.innerHTML = "";
+  ["전체", ...BRANCHES].forEach(b => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (b === acBranchFilter ? ' active' : '');
+    chip.textContent = b;
+    chip.addEventListener('click', () => { acBranchFilter = b; renderAircon(); });
+    wrap.appendChild(chip);
+  });
+}
+document.getElementById('acSearch').addEventListener('input', (e) => {
+  acSearchTerm = e.target.value.trim().toLowerCase();
+  renderAircon();
+});
+
+function renderAircon(){
+  renderAcBranchChips();
+
+  // 요약: 분원별 최근 필터청소일/분해세척일
+  document.getElementById('acSummaryBody').innerHTML = BRANCHES.map(b => {
+    const rows = state.aircon.filter(r => r['소속분원'] === b);
+    const latestOf = (type) => {
+      const filtered = rows.filter(r => r['작업유형'] === type).sort((a,b2)=>(toDate(b2['작업일자'])||0)-(toDate(a['작업일자'])||0));
+      return filtered[0] ? fmtDate(filtered[0]['작업일자']) : '기록 없음';
+    };
+    return `<tr>
+      <td data-label="소속분원">${b}</td>
+      <td data-label="최근 필터청소일">${latestOf('필터청소')}</td>
+      <td data-label="최근 분해세척일">${latestOf('분해세척')}</td>
+    </tr>`;
+  }).join('');
+
+  // 목록
+  let rows = [...state.aircon].sort((a,b) => (toDate(b['작업일자'])||0) - (toDate(a['작업일자'])||0));
+  if(acBranchFilter !== '전체') rows = rows.filter(r => r['소속분원'] === acBranchFilter);
+  if(acSearchTerm){
+    rows = rows.filter(r =>
+      String(r['위치']||'').toLowerCase().includes(acSearchTerm) ||
+      String(r['담당자']||'').toLowerCase().includes(acSearchTerm)
+    );
+  }
+  current.aircon = rows;
+
+  document.getElementById('acBody').innerHTML = rows.length ? rows.map(r => `
+    <tr>
+      <td data-label="작업일자">${fmtDate(r['작업일자'])}</td>
+      <td data-label="소속분원">${r['소속분원']||'-'}</td>
+      <td data-label="위치">${r['위치']||'-'}</td>
+      <td data-label="작업유형"><span class="badge gray">${r['작업유형']||'-'}</span></td>
+      <td data-label="담당자">${r['담당자']||'-'}</td>
+      <td data-label="비고">${r['비고']||'-'}</td>
+    </tr>`).join('') : `<tr><td colspan="6" style="text-align:center;color:var(--muted);">기록이 없습니다.</td></tr>`;
+}
+
+document.getElementById('acExportBtn').addEventListener('click', () => {
+  if(current.aircon.length === 0){ alert('내보낼 자료가 없습니다.'); return; }
+  const ws = XLSX.utils.json_to_sheet(current.aircon);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '에어컨관리이력');
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `에어컨관리이력_${stamp}.xlsx`);
+});
+
+populateBranchSelect();
+renderItemChecklist();
+window.addEventListener('DOMContentLoaded', loadHistoryFromServer);
+</script>
+</body>
+</html>
