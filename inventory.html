@@ -175,7 +175,9 @@ select{cursor:pointer;}
     </div>
     <div class="nav-group">
       <div class="nav-group-label">입출고</div>
-      <div class="nav-item" onclick="goPage('inout')"><span class="nav-icon">🔄</span>입고 · 불출</div>
+      <div class="nav-item" onclick="goPage('inout')"><span class="nav-icon">🏢</span>본사 입출고</div>
+      <div class="nav-item" onclick="goPage('branchout')"><span class="nav-icon">🏬</span>분원 입출고</div>
+      <div class="nav-item" onclick="goPage('units')"><span class="nav-icon">📏</span>불출단위 설정</div>
     </div>
     <div class="nav-group">
       <div class="nav-group-label">기록</div>
@@ -191,7 +193,7 @@ select{cursor:pointer;}
   <div class="topbar">
     <div class="topbar-title" id="topbar-title">대시보드</div>
     <div class="topbar-right">
-      <a href="https://varon2026.github.io/varon-links/" style="font-size:12px;color:#6B7280;text-decoration:none;margin-right:6px;">← 바론링크</a>
+      <a href="https://solie62418.github.io/varon-links/" style="font-size:12px;color:#6B7280;text-decoration:none;margin-right:6px;">← 바론링크</a>
       <span class="badge" id="today-badge"></span>
       <div class="export-btn-group">
         <button class="btn btn-sm btn-excel" onclick="exportExcel()">📥 엑셀 내보내기</button>
@@ -268,11 +270,12 @@ select{cursor:pointer;}
       </div>
     </div>
 
-    <!-- ══ In/Out ══ -->
+    <!-- ══ In/Out (본사) ══ -->
     <div class="page" id="page-inout">
       <div class="card">
-        <div class="card-header"><div class="card-title">🔄 입고 · 불출 등록</div></div>
+        <div class="card-header"><div class="card-title">🏢 본사 입출고 등록</div></div>
         <div class="card-body">
+          <div style="font-size:12.5px;color:var(--gray4);margin:-6px 0 12px;">본사(총무보관)로 들어오는 입고와, 본사에서 분원으로 내보내는 불출을 정확한 숫자로 기록합니다.</div>
           <div class="form-grid">
             <div class="form-group"><label>날짜</label><input type="date" id="io-date"></div>
             <div class="form-group">
@@ -308,6 +311,63 @@ select{cursor:pointer;}
           <div class="tbl-wrap">
             <table><thead><tr><th>#</th><th>날짜</th><th>유형</th><th>품목</th><th>수량</th><th>분원</th><th>담당자</th><th>비고</th><th>수정</th><th>삭제</th></tr></thead>
             <tbody id="io-tbody"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Branch Out (분원) ══ -->
+    <div class="page" id="page-branchout">
+      <div class="card">
+        <div class="card-header"><div class="card-title">🏬 분원 출고(불출) 등록</div></div>
+        <div class="card-body">
+          <div style="font-size:12.5px;color:var(--gray4);margin:-6px 0 12px;">본사에서 받은 물건을 실제로 나눠주거나 써서 없앤 것을 그때그때 기록합니다. (본사 불출 기록과는 별개입니다)</div>
+          <div class="form-grid">
+            <div class="form-group"><label>분원</label><select id="bo-branch" onchange="renderBranchStockHint()"></select></div>
+            <div class="form-group"><label>날짜</label><input type="date" id="bo-date"></div>
+            <div class="form-group"><label>품목</label><select id="bo-item" onchange="renderBranchStockHint()"></select></div>
+            <div class="form-group">
+              <label>수량 <span id="bo-unit-label" style="color:var(--gray4);font-weight:400;"></span></label>
+              <input type="number" id="bo-qty" min="1" placeholder="0" oninput="renderBranchStockHint()">
+            </div>
+            <div class="form-group"><label>담당자</label><input type="text" id="bo-person" placeholder="홍길동"></div>
+            <div class="form-group full"><label>비고</label><input type="text" id="bo-note" placeholder="예: 신규반 학생 배부용"></div>
+          </div>
+          <div id="bo-stock-hint" style="margin-top:8px;font-size:13px;font-weight:600;"></div>
+          <div style="margin-top:16px;display:flex;gap:10px">
+            <button class="btn btn-primary" onclick="saveBranchOutRecord()">✅ 저장</button>
+            <button class="btn btn-secondary" onclick="clearBranchOutForm()">초기화</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 분원 입출고 내역</div>
+          <div class="filter-bar" style="margin:0">
+            <select id="bo-filter-branch" onchange="renderBranchOutTable()"><option value="">전체 분원</option></select>
+            <select id="bo-filter-item" onchange="renderBranchOutTable()"><option value="">전체 품목</option></select>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap">
+            <table><thead><tr><th>#</th><th>날짜</th><th>분원</th><th>품목</th><th>수량</th><th>현재 재고</th><th>담당자</th><th>비고</th><th>삭제</th></tr></thead>
+            <tbody id="bo-tbody"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Unit Settings ══ -->
+    <div class="page" id="page-units">
+      <div class="card">
+        <div class="card-header"><div class="card-title">📏 품목별 분원 불출단위 설정</div></div>
+        <div class="card-body">
+          <div style="font-size:12.5px;color:var(--gray4);margin-bottom:12px;">분원에서 출고(불출) 기록을 남길 때 어떤 단위로 세는지 품목마다 정해둡니다 (예: 볼펜 = 자루, 황봉투 = 개, 우산 = 개). 본사 입출고에는 적용되지 않습니다.</div>
+          <table><thead><tr><th style="width:60%">품목</th><th>분원 불출단위</th></tr></thead>
+            <tbody id="units-tbody"></tbody>
+          </table>
+          <div style="margin-top:16px;">
+            <button class="btn btn-primary" onclick="saveUnits()">✅ 저장</button>
           </div>
         </div>
       </div>
@@ -505,7 +565,7 @@ const SNAPSHOT = {
 };
 
 // ─── State ───────────────────────────────────────────────
-let DB = { records:[], audits:[], alertThresh:{}, radarThresh:{} };
+let DB = { records:[], audits:[], alertThresh:{}, radarThresh:{}, units:{} };
 let UNDO_STACK = [];
 let editingId = null;
 
@@ -517,6 +577,7 @@ function loadDB() {
       // 기준값 없으면 기본값 채우기
       if (!DB.alertThresh) DB.alertThresh = {...DEFAULT_ALERT};
       if (!DB.radarThresh) DB.radarThresh = {...DEFAULT_RADAR};
+      if (!DB.units) DB.units = {};
     } catch(e) {}
   } else {
     DB.alertThresh = {...DEFAULT_ALERT};
@@ -583,6 +644,7 @@ async function cloudLoad(){
       DB=d.db;
       if(!DB.alertThresh)DB.alertThresh={...DEFAULT_ALERT};
       if(!DB.radarThresh)DB.radarThresh={...DEFAULT_RADAR};
+      if(!DB.units)DB.units={};
       localStorage.setItem('baron_inv_v6',JSON.stringify(DB));
       renderDashboard();updateInventorySnapshotOptions();
     }
@@ -692,15 +754,16 @@ function getStock(branch, item) {
     const out = DB.records.filter(r=>r.type==='불출'&&r.item===item).reduce((s,r)=>s+r.qty,0);
     return inp - out;
   }
-  // 분원: 해당 분원으로 직접 입고된 수량 + 불출된 수량
+  // 분원: 해당 분원으로 직접 입고된 수량 + 본사에서 불출받은 수량 − 분원에서 실제 소비(분원출고)한 수량
   const directIn = DB.records.filter(r=>r.type==='입고'&&r.item===item&&r.branch===branch).reduce((s,r)=>s+r.qty,0);
   const outIn    = DB.records.filter(r=>r.type==='불출'&&r.item===item&&r.branch===branch).reduce((s,r)=>s+r.qty,0);
-  return directIn + outIn;
+  const consumed = DB.records.filter(r=>r.type==='분원출고'&&r.item===item&&r.branch===branch).reduce((s,r)=>s+r.qty,0);
+  return directIn + outIn - consumed;
 }
 function getBranchOnly(item) { return ALL_BRANCHES_NO_HQ.reduce((s,b)=>s+getStock(b,item),0); }
 
 // ─── Navigation ──────────────────────────────────────────
-const PAGE_TITLES = {dashboard:'대시보드',inventory:'재고 현황',inout:'입고·불출',audit:'재고 실사',trend:'사용량 추이',history:'전체 이력'};
+const PAGE_TITLES = {dashboard:'대시보드',inventory:'재고 현황',inout:'본사 입출고',branchout:'분원 입출고',units:'불출단위 설정',audit:'재고 실사',trend:'사용량 추이',history:'전체 이력'};
 function goPage(name) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -718,7 +781,7 @@ function renderAll() {
 function initSelects() {
   const targets = {
     'io-item': ITEMS, 'io-filter-item': ITEMS, 'hist-item': ITEMS,
-    'trend-item': ITEMS, 'trend2-item': ITEMS,
+    'trend-item': ITEMS, 'trend2-item': ITEMS, 'bo-item': ITEMS, 'bo-filter-item': ITEMS,
   };
   Object.entries(targets).forEach(([id, list]) => {
     const sel = document.getElementById(id);
@@ -732,7 +795,7 @@ function initSelects() {
     });
   });
   ALL_BRANCHES_NO_HQ.forEach(b=>{
-    ['audit-branch','audit-filter-branch'].forEach(id=>{
+    ['audit-branch','audit-filter-branch','bo-branch','bo-filter-branch'].forEach(id=>{
       const sel=document.getElementById(id); if(!sel)return;
       const o=document.createElement('option'); o.value=o.textContent=b; sel.appendChild(o);
     });
@@ -743,7 +806,7 @@ function initSelects() {
     });
   });
   const today=new Date().toISOString().slice(0,10);
-  ['io-date','audit-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=today;});
+  ['io-date','audit-date','bo-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=today;});
   onTypeChange();
 }
 
@@ -1026,6 +1089,104 @@ function clearIOForm(){
   document.getElementById('io-qty').value='';
   document.getElementById('io-note').value='';
   document.getElementById('io-person').value='';
+}
+
+// ─── 불출단위 설정 ─────────────────────────────────────────
+function renderUnitsTable(){
+  const tbody = document.getElementById('units-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = ITEMS.map(item => `
+    <tr>
+      <td>${item}</td>
+      <td><input type="text" class="unit-input" data-item="${item}" value="${DB.units[item]||''}" placeholder="예: 개, 자루, 박스"></td>
+    </tr>`).join('');
+}
+function saveUnits(){
+  document.querySelectorAll('.unit-input').forEach(inp=>{
+    DB.units[inp.dataset.item] = inp.value.trim();
+  });
+  saveDB();
+  toast('불출단위 저장 완료','success');
+  renderBranchStockHint();
+}
+function unitLabel(item){
+  const u = DB.units[item];
+  return u ? `(${u})` : '';
+}
+
+// ─── 분원 입출고(불출) ────────────────────────────────────
+function renderBranchStockHint(){
+  const branch = document.getElementById('bo-branch')?.value;
+  const item = document.getElementById('bo-item')?.value;
+  const qty = parseInt(document.getElementById('bo-qty')?.value)||0;
+  const unitLbl = document.getElementById('bo-unit-label');
+  if(unitLbl) unitLbl.textContent = unitLabel(item);
+  const hint = document.getElementById('bo-stock-hint');
+  if(!hint || !branch || !item) { if(hint) hint.textContent=''; return; }
+  const stock = getStock(branch, item);
+  const after = stock - qty;
+  let msg = `${branch} 현재 재고: ${stock.toLocaleString()}${DB.units[item]?(' '+DB.units[item]):'개'}`;
+  if(qty > 0){
+    msg += ` → 이번 출고 후: ${after.toLocaleString()}${DB.units[item]?(' '+DB.units[item]):'개'}`;
+  }
+  hint.style.color = after < 0 ? 'var(--danger, #e74c3c)' : 'var(--gray4)';
+  if(after < 0) msg += '  ⚠ 받은 양보다 많이 출고하는 중입니다. 확인해주세요.';
+  hint.textContent = msg;
+}
+function saveBranchOutRecord(){
+  const date   = document.getElementById('bo-date').value;
+  const branch = document.getElementById('bo-branch').value;
+  const item   = document.getElementById('bo-item').value;
+  const qty    = parseInt(document.getElementById('bo-qty').value)||0;
+  const person = document.getElementById('bo-person').value.trim();
+  const note   = document.getElementById('bo-note').value.trim();
+  if(!date||qty<=0){toast('날짜와 수량을 입력하세요','error');return;}
+  const stock = getStock(branch, item);
+  if(qty > stock){
+    if(!confirm(`현재 ${branch}의 ${item} 재고는 ${stock}개인데 ${qty}개를 출고하려고 합니다.\n그래도 저장하시겠습니까?`)) return;
+  }
+  pushUndo();
+  DB.records.push({id:uid(), date, type:'분원출고', item, qty, branch, person, note});
+  saveDB(); renderBranchOutTable(); renderDashboard(); renderBranchStockHint();
+  showUndoBanner(`분원출고 저장: ${branch} · ${item} ${qty.toLocaleString()}${DB.units[item]||'개'}`);
+  clearBranchOutForm();
+}
+function clearBranchOutForm(){
+  document.getElementById('bo-qty').value='';
+  document.getElementById('bo-note').value='';
+  document.getElementById('bo-person').value='';
+  renderBranchStockHint();
+}
+function renderBranchOutTable(){
+  const tbody = document.getElementById('bo-tbody');
+  if(!tbody) return;
+  const fBranch = document.getElementById('bo-filter-branch')?.value || '';
+  const fItem = document.getElementById('bo-filter-item')?.value || '';
+  let rows = DB.records.filter(r=>r.type==='분원출고');
+  if(fBranch) rows = rows.filter(r=>r.branch===fBranch);
+  if(fItem) rows = rows.filter(r=>r.item===fItem);
+  rows = rows.slice().sort((a,b)=> b.date.localeCompare(a.date));
+  tbody.innerHTML = rows.length===0
+    ? `<tr><td colspan="9" style="text-align:center;color:var(--gray4);padding:24px;">기록이 없습니다</td></tr>`
+    : rows.map((r,i)=>`
+      <tr>
+        <td>${i+1}</td>
+        <td>${r.date}</td>
+        <td>${r.branch}</td>
+        <td>${r.item}</td>
+        <td>${r.qty.toLocaleString()}${DB.units[r.item]||'개'}</td>
+        <td>${getStock(r.branch,r.item).toLocaleString()}${DB.units[r.item]||'개'}</td>
+        <td>${r.person||'-'}</td>
+        <td>${r.note||'-'}</td>
+        <td><button class="btn btn-sm btn-secondary" onclick="deleteBranchOutRecord('${r.id}')">삭제</button></td>
+      </tr>`).join('');
+}
+function deleteBranchOutRecord(id){
+  if(!confirm('이 출고 기록을 삭제하시겠습니까?')) return;
+  pushUndo();
+  DB.records = DB.records.filter(r=>r.id!==id);
+  saveDB(); renderBranchOutTable(); renderDashboard();
+  toast('삭제되었습니다','success');
 }
 
 // 수정 모달
@@ -1684,7 +1845,7 @@ function setTodayBadge(){
 }
 
 // ─── Boot ─────────────────────────────────────────────────
-loadDB(); initSelects(); setTodayBadge(); renderDashboard(); updateInventorySnapshotOptions(); cloudLoad();
+loadDB(); initSelects(); setTodayBadge(); renderDashboard(); updateInventorySnapshotOptions(); cloudLoad(); renderUnitsTable(); renderBranchOutTable(); renderBranchStockHint();
 ['audit-modal','edit-modal','thresh-modal'].forEach(id=>{
   document.getElementById(id).addEventListener('click',function(e){if(e.target===this)closeModal(id);});
 });
