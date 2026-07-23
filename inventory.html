@@ -319,11 +319,18 @@ select{cursor:pointer;}
     <!-- ══ Branch Out (분원) ══ -->
     <div class="page" id="page-branchout">
       <div class="card">
-        <div class="card-header"><div class="card-title">🏬 분원 출고(불출) 등록</div></div>
+        <div class="card-header"><div class="card-title">🏬 분원 입출고 등록</div></div>
         <div class="card-body">
-          <div style="font-size:12.5px;color:var(--gray4);margin:-6px 0 12px;">본사에서 받은 물건을 실제로 나눠주거나 써서 없앤 것을 그때그때 기록합니다. (본사 불출 기록과는 별개입니다)</div>
+          <div style="font-size:12.5px;color:var(--gray4);margin:-6px 0 12px;">분원에서 그때그때 직접 받은 것(입고)과, 나눠주거나 써서 없앤 것(출고)을 기록합니다. (본사가 보내는 불출 기록과는 별개입니다)</div>
           <div class="form-grid">
             <div class="form-group"><label>분원</label><select id="bo-branch" onchange="renderBranchStockHint()"></select></div>
+            <div class="form-group">
+              <label>유형</label>
+              <select id="bo-type" onchange="onBranchTypeChange()">
+                <option value="분원출고">출고 (나눠줌·사용함)</option>
+                <option value="입고">입고 (직접 받음·구매함)</option>
+              </select>
+            </div>
             <div class="form-group"><label>날짜</label><input type="date" id="bo-date"></div>
             <div class="form-group"><label>품목</label><select id="bo-item" onchange="renderBranchStockHint()"></select></div>
             <div class="form-group">
@@ -891,16 +898,16 @@ function renderDashboard() {
 
 function renderHeatmap() {
   const mode = document.getElementById('hm-mode').value;
-  // 각 품목의 최대값 (분원 중) → 색 농도 기준
+  const cols = ['총무보관', ...ALL_BRANCHES_NO_HQ];
   const wrap = document.getElementById('heatmap-wrap');
 
   // 헤더
   let html = '<table class="heatmap-table"><thead><tr><th class="item-hd">품목</th>';
-  ALL_BRANCHES_NO_HQ.forEach(b => { html += `<th class="branch-hd">${b}</th>`; });
+  cols.forEach((b,i) => { html += `<th class="branch-hd"${i===0?' style="border-right:2px solid var(--navy);"':''}>${b}</th>`; });
   html += '</tr></thead><tbody>';
 
   ITEMS.forEach(item => {
-    const qtys = ALL_BRANCHES_NO_HQ.map(b => getStock(b, item));
+    const qtys = cols.map(b => getStock(b, item));
     const maxQ = Math.max(...qtys, 1);
     const totalQ = qtys.reduce((s,q)=>s+q,0) || 1;
     html += `<tr><td class="item-label-cell">${item}</td>`;
@@ -916,9 +923,10 @@ function renderHeatmap() {
       const display = mode === 'pct' ? `<span class="hm-num" style="color:${fg}">${pct}%</span>` :
         `<span class="hm-num" style="color:${fg}">${q.toLocaleString()}</span><span class="hm-pct" style="color:${fg}">${pct}%</span>`;
       const thresh = DB.alertThresh[item] || 0;
-      const isAlert = q < thresh;
+      const isAlert = i>0 && q < thresh; // 총무보관은 분원용 기준치 알림 대상이 아님
       const alertStyle = isAlert ? 'outline:2px solid #e05454;outline-offset:-2px;' : '';
-      html += `<td class="hm-cell" style="background:${bg};${alertStyle}" data-item="${item}" data-branch="${ALL_BRANCHES_NO_HQ[i]}" data-tip="${item} / ${ALL_BRANCHES_NO_HQ[i]}: ${q.toLocaleString()}${isAlert?' ⚠️기준미달':''}" onclick="onHeatmapClick('${item}')">${display}</td>`;
+      const borderStyle = i===0 ? 'border-right:2px solid var(--navy);' : '';
+      html += `<td class="hm-cell" style="background:${bg};${alertStyle}${borderStyle}" data-item="${item}" data-branch="${cols[i]}" data-tip="${item} / ${cols[i]}: ${q.toLocaleString()}${isAlert?' ⚠️기준미달':''}" onclick="onHeatmapClick('${item}')">${display}</td>`;
     });
     html += '</tr>';
   });
@@ -946,15 +954,16 @@ function onHeatmapClick(item) {
 
 function renderBarChart(item) {
   const wrap = document.getElementById('bar-chart-wrap');
-  const qtys = ALL_BRANCHES_NO_HQ.map(b=>getStock(b,item));
+  const cols = ['총무보관', ...ALL_BRANCHES_NO_HQ];
+  const qtys = cols.map(b=>getStock(b,item));
   const maxQ = Math.max(...qtys, 1);
-  let html = `<div class="bar-chart-title">📊 ${item} — 분원별 재고</div>`;
+  let html = `<div class="bar-chart-title">📊 ${item} — 본사·분원별 재고</div>`;
   qtys.forEach((q, i) => {
-    const branch = ALL_BRANCHES_NO_HQ[i];
+    const branch = cols[i];
     const pct = (q/maxQ*100).toFixed(1);
-    const color = BRANCH_COLORS[i+1];
+    const color = BRANCH_COLORS[i];
     html += `<div class="bar-row">
-      <div class="bar-label">${branch}</div>
+      <div class="bar-label">${branch}${i===0?' 🏢':''}</div>
       <div class="bar-track">
         <div class="bar-fill" style="width:${pct}%;background:${color}">
           <span class="bar-val">${q.toLocaleString()}</span>
@@ -1114,20 +1123,26 @@ function unitLabel(item){
   return u ? `(${u})` : '';
 }
 
-// ─── 분원 입출고(불출) ────────────────────────────────────
+// ─── 분원 입출고 ────────────────────────────────────
+function onBranchTypeChange(){
+  renderBranchStockHint();
+}
 function renderBranchStockHint(){
   const branch = document.getElementById('bo-branch')?.value;
   const item = document.getElementById('bo-item')?.value;
+  const type = document.getElementById('bo-type')?.value || '분원출고';
   const qty = parseInt(document.getElementById('bo-qty')?.value)||0;
   const unitLbl = document.getElementById('bo-unit-label');
   if(unitLbl) unitLbl.textContent = unitLabel(item);
   const hint = document.getElementById('bo-stock-hint');
   if(!hint || !branch || !item) { if(hint) hint.textContent=''; return; }
   const stock = getStock(branch, item);
-  const after = stock - qty;
-  let msg = `${branch} 현재 재고: ${stock.toLocaleString()}${DB.units[item]?(' '+DB.units[item]):'개'}`;
+  const signed = type === '입고' ? qty : -qty;
+  const after = stock + signed;
+  const unitTxt = DB.units[item] ? (' '+DB.units[item]) : '개';
+  let msg = `${branch} 현재 재고: ${stock.toLocaleString()}${unitTxt}`;
   if(qty > 0){
-    msg += ` → 이번 출고 후: ${after.toLocaleString()}${DB.units[item]?(' '+DB.units[item]):'개'}`;
+    msg += ` → 이번 ${type} 후: ${after.toLocaleString()}${unitTxt}`;
   }
   hint.style.color = after < 0 ? 'var(--danger, #e74c3c)' : 'var(--gray4)';
   if(after < 0) msg += '  ⚠ 받은 양보다 많이 출고하는 중입니다. 확인해주세요.';
@@ -1136,19 +1151,22 @@ function renderBranchStockHint(){
 function saveBranchOutRecord(){
   const date   = document.getElementById('bo-date').value;
   const branch = document.getElementById('bo-branch').value;
+  const type   = document.getElementById('bo-type').value;
   const item   = document.getElementById('bo-item').value;
   const qty    = parseInt(document.getElementById('bo-qty').value)||0;
   const person = document.getElementById('bo-person').value.trim();
   const note   = document.getElementById('bo-note').value.trim();
   if(!date||qty<=0){toast('날짜와 수량을 입력하세요','error');return;}
-  const stock = getStock(branch, item);
-  if(qty > stock){
-    if(!confirm(`현재 ${branch}의 ${item} 재고는 ${stock}개인데 ${qty}개를 출고하려고 합니다.\n그래도 저장하시겠습니까?`)) return;
+  if(type === '분원출고'){
+    const stock = getStock(branch, item);
+    if(qty > stock){
+      if(!confirm(`현재 ${branch}의 ${item} 재고는 ${stock}개인데 ${qty}개를 출고하려고 합니다.\n그래도 저장하시겠습니까?`)) return;
+    }
   }
   pushUndo();
-  DB.records.push({id:uid(), date, type:'분원출고', item, qty, branch, person, note});
+  DB.records.push({id:uid(), date, type, item, qty, branch, person, note});
   saveDB(); renderBranchOutTable(); renderDashboard(); renderBranchStockHint();
-  showUndoBanner(`분원출고 저장: ${branch} · ${item} ${qty.toLocaleString()}${DB.units[item]||'개'}`);
+  showUndoBanner(`${type} 저장: ${branch} · ${item} ${qty.toLocaleString()}${DB.units[item]||'개'}`);
   clearBranchOutForm();
 }
 function clearBranchOutForm(){
@@ -1162,7 +1180,7 @@ function renderBranchOutTable(){
   if(!tbody) return;
   const fBranch = document.getElementById('bo-filter-branch')?.value || '';
   const fItem = document.getElementById('bo-filter-item')?.value || '';
-  let rows = DB.records.filter(r=>r.type==='분원출고');
+  let rows = DB.records.filter(r=>r.type==='분원출고'||(r.type==='입고'&&r.branch!=='총무보관'&&r.branch!=='바론'));
   if(fBranch) rows = rows.filter(r=>r.branch===fBranch);
   if(fItem) rows = rows.filter(r=>r.item===fItem);
   rows = rows.slice().sort((a,b)=> b.date.localeCompare(a.date));
@@ -1174,7 +1192,7 @@ function renderBranchOutTable(){
         <td>${r.date}</td>
         <td>${r.branch}</td>
         <td>${r.item}</td>
-        <td>${r.qty.toLocaleString()}${DB.units[r.item]||'개'}</td>
+        <td><span class="type-badge ${r.type==='입고'?'type-in':'type-out'}">${r.type}</span> ${r.qty.toLocaleString()}${DB.units[r.item]||'개'}</td>
         <td>${getStock(r.branch,r.item).toLocaleString()}${DB.units[r.item]||'개'}</td>
         <td>${r.person||'-'}</td>
         <td>${r.note||'-'}</td>
@@ -1182,7 +1200,7 @@ function renderBranchOutTable(){
       </tr>`).join('');
 }
 function deleteBranchOutRecord(id){
-  if(!confirm('이 출고 기록을 삭제하시겠습니까?')) return;
+  if(!confirm('이 기록을 삭제하시겠습니까?')) return;
   pushUndo();
   DB.records = DB.records.filter(r=>r.id!==id);
   saveDB(); renderBranchOutTable(); renderDashboard();
@@ -1300,6 +1318,27 @@ function saveAudit(){
   DB.audits.push({id:uid(),date,period,branch,person,note,data});
   saveDB(); renderAuditList(); updateInventorySnapshotOptions();
   toast(`실사 저장 완료: ${branch} (${date})`,'success');
+
+  // 장부재고와 실사수량이 다른 품목이 있으면, 차이만큼 조정 기록을 남길지 물어본다.
+  const diffs = Object.entries(data)
+    .map(([item, counted]) => ({ item, book: getStock(branch, item), counted }))
+    .filter(d => d.counted !== d.book);
+  if(diffs.length > 0){
+    const lines = diffs.map(d => `- ${d.item}: 장부 ${d.book} → 실사 ${d.counted} (${d.counted>d.book?'+':''}${d.counted-d.book})`).join('\n');
+    if(confirm(`장부재고와 실사수량이 다른 품목이 ${diffs.length}개 있습니다.\n\n${lines}\n\n차이만큼 "실사 조정" 기록을 분원입출고에 자동으로 남겨서 재고에 바로 반영할까요?`)){
+      diffs.forEach(d => {
+        const gap = d.counted - d.book;
+        DB.records.push({
+          id: uid(), date, item: d.item,
+          type: gap > 0 ? '입고' : '분원출고',
+          qty: Math.abs(gap), branch,
+          person: person || '실사조정', note: `실사 조정 (${date}) — 장부 ${d.book} → 실사 ${d.counted}`
+        });
+      });
+      saveDB(); renderBranchOutTable(); renderDashboard();
+      toast(`${diffs.length}건 조정 기록 반영 완료`,'success');
+    }
+  }
   ITEMS.forEach(item=>{const el=document.getElementById('aq-'+item.replace(/ /g,'_'));if(el)el.value='';});
   document.getElementById('audit-note').value='';
   document.getElementById('audit-person').value='';
