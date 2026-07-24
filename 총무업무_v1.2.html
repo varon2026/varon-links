@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>총무업무</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+  :root{
+    --navy:#1E3A66; --navy-dark:#132844; --gold:#A9790E;
+    --bg:#F5F6F8; --card:#FFFFFF; --border:#E2E5EA; --text:#242832; --muted:#7A8090;
+    --danger:#C0392B; --ok:#2F9E44; --wait:#E8A93C;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif;}
+
+  #gate{position:fixed;inset:0;background:var(--navy-dark);display:flex;align-items:center;justify-content:center;z-index:9999;}
+  #gate .box{background:#fff;border-radius:16px;padding:36px 32px;width:320px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3);}
+  #gate .icon{width:52px;height:52px;border-radius:14px;background:var(--navy);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;}
+  #gate h2{margin:0 0 6px;font-size:17px;color:var(--navy);}
+  #gate p{margin:0 0 18px;font-size:12px;color:var(--muted);}
+  #gate input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:10px;font-size:15px;text-align:center;letter-spacing:2px;margin-bottom:12px;}
+  #gate button{width:100%;padding:11px;border:none;border-radius:10px;background:var(--navy);color:#fff;font-weight:700;font-size:14px;cursor:pointer;}
+  #gate .err{color:var(--danger);font-size:12px;margin-top:8px;min-height:16px;}
+  #appRoot{display:none;}
+
+  header{background:var(--navy);color:#fff;padding:18px 20px;position:sticky;top:0;z-index:20;}
+  header h1{margin:0;font-size:19px;}
+  header .sub{margin:2px 0 0;font-size:12px;color:#B9C4DC;}
+
+  nav.tabs{display:flex;background:var(--navy-dark);overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  nav.tabs button{flex:0 0 auto;background:transparent;border:none;color:#B9C4DC;padding:13px 14px;font-size:12.5px;font-weight:700;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;}
+  nav.tabs button.active{color:#fff;border-bottom-color:var(--gold);background:rgba(255,255,255,.05);}
+
+  main{max-width:900px;margin:0 auto;padding:16px;}
+  .view{display:none;}
+  .view.active{display:block;}
+  .view-desc{font-size:12.5px;color:var(--muted);margin-bottom:12px;line-height:1.5;}
+
+  button.primary{background:var(--navy);color:#fff;border:none;padding:9px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;}
+  button.secondary{background:#fff;color:var(--navy);border:1px solid var(--border);padding:9px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;}
+  button.ghost-add{background:#EDF2FA;color:var(--navy);border:1px dashed var(--navy);padding:9px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:12px;width:100%;}
+  button.danger{background:#fff;color:var(--danger);border:1px solid #F3C9C4;padding:6px 10px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;}
+  button.small{padding:6px 10px;font-size:12px;}
+
+  .search-row{margin-bottom:12px;}
+  .search-row input{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:999px;font-size:13px;font-family:inherit;}
+
+  .form-box{border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;background:#FAFBFC;display:none;}
+  .form-box.open{display:block;}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:10px;}
+  .form-grid label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:var(--muted);}
+  .form-grid input, .form-grid select, .form-grid textarea{padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;}
+  .form-grid textarea{grid-column:1/-1;min-height:50px;resize:vertical;}
+  .form-actions{display:flex;gap:8px;}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;}
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;}
+  .card-title{font-size:14.5px;font-weight:800;color:var(--navy);}
+  .card-tag{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:800;background:#E7F0FF;color:var(--navy);margin-right:6px;}
+  .card-tag.gold{background:#FDF0DA;color:var(--gold);}
+  .card-row{font-size:12.5px;color:var(--text);padding:2px 0;}
+  .card-row b{color:var(--muted);font-weight:700;margin-right:4px;}
+  .card-row a{color:#2E6FD9;text-decoration:underline;text-underline-offset:2px;word-break:break-all;}
+  .card-actions{display:flex;gap:6px;margin-top:8px;}
+  .empty{text-align:center;padding:40px 20px;color:var(--muted);}
+  .priority-상{color:var(--danger);font-weight:800;}
+  .priority-중{color:var(--wait);font-weight:800;}
+  .priority-하{color:var(--muted);font-weight:800;}
+
+  footer{text-align:center;font-size:11px;color:var(--muted);padding:20px;}
+
+  /* ---- PDF 내보내기용 인쇄 화면 ---- */
+  #printArea{display:none;}
+  .print-page{padding:20px 0;}
+  .print-page + .print-page{page-break-before:always;}
+  .print-title{font-size:20px;font-weight:800;color:var(--navy);margin-bottom:2px;}
+  .print-sub{font-size:12px;color:var(--muted);margin-bottom:18px;}
+  .print-section-title{font-size:15px;font-weight:800;color:var(--navy);margin:18px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--navy);}
+  table.print-table{width:100%;border-collapse:collapse;margin-bottom:6px;}
+  table.print-table th{background:#EDF2FA;color:var(--navy);font-size:11px;text-align:left;padding:6px 8px;border:1px solid var(--border);}
+  table.print-table td{font-size:11px;padding:6px 8px;border:1px solid var(--border);vertical-align:top;line-height:1.4;}
+  table.print-table a{color:#2E6FD9;}
+  @media print{
+    body *{visibility:hidden;}
+    #printArea, #printArea *{visibility:visible;}
+    #printArea{display:block;position:absolute;top:0;left:0;width:100%;}
+  }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="box">
+    <div class="icon">🔒</div>
+    <h2>총무업무</h2>
+    <p>계정 정보 등 민감한 내용이 포함되어 있습니다.<br>총무팀 담당자만 접근 가능합니다.</p>
+    <input type="password" id="gatePw" placeholder="비밀번호" autocomplete="new-password" onkeydown="if(event.key==='Enter')checkGate()">
+    <button onclick="checkGate()">입장</button>
+    <div class="err" id="gateErr"></div>
+  </div>
+</div>
+
+<div id="appRoot">
+
+<header>
+  <h1>총무업무</h1>
+  <div class="sub">바론네트웍스(주) 총무팀 · 업무 확인·점검용</div>
+</header>
+
+<nav class="tabs" id="tabsBar"></nav>
+
+<main>
+  <div class="search-row"><input type="text" id="globalSearch" placeholder="이 탭에서 검색" oninput="renderCurrentTab()"></div>
+  <div style="display:flex;gap:8px;margin-bottom:10px;">
+    <button class="secondary small" style="flex:1;" onclick="exportPdf(false)">📄 현재 탭 PDF로 내보내기</button>
+    <button class="secondary small" style="flex:1;" onclick="exportPdf(true)">📚 전체 탭 PDF로 내보내기</button>
+  </div>
+  <button class="ghost-add" onclick="toggleForm()">➕ 새 항목 등록</button>
+  <div class="form-box" id="formBox"></div>
+  <div id="listWrap"></div>
+</main>
+
+<div id="printArea"></div>
+
+<footer>바론네트웍스(주) 총무팀 · 총무업무 v1.0</footer>
+</div>
+
+<script>
+const GATE_PASSWORD = '2026';
+function checkGate(){
+  const val = document.getElementById('gatePw').value;
+  if(val === GATE_PASSWORD){
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('appRoot').style.display = 'block';
+    sessionStorage.setItem('ga_unlocked', '1');
+    boot();
+  }else{
+    document.getElementById('gateErr').textContent = '비밀번호가 올바르지 않습니다.';
+  }
+}
+window.addEventListener('DOMContentLoaded', () => {
+  if(sessionStorage.getItem('ga_unlocked') === '1'){
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('appRoot').style.display = 'block';
+    boot();
+  }
+});
+
+/* ---------------- 링크 자동 인식 ---------------- */
+// 알려진 내부 앱 키워드는 실제 주소로, 그 외 http(s):// 로 시작하는 텍스트는 그대로 링크로 바꾼다.
+const LINK_MAP = {
+  '총무링크': 'https://varon2026.github.io/varon-links/',
+  '바론링크': 'https://varon2026.github.io/varon-links/',
+  '소모품재고관리 앱': 'https://varon2026.github.io/varon-links/inventory.html',
+  '소모품현황': 'https://varon2026.github.io/varon-links/inventory.html',
+  '시설관리대장': 'https://varon2026.github.io/varon-links/facility-log.html',
+  '시설관리현황': 'https://varon2026.github.io/varon-links/facility-log.html',
+  '청소관리대장': 'https://varon2026.github.io/varon-links/cleaning-log.html',
+  '청소관리현황': 'https://varon2026.github.io/varon-links/cleaning-log.html',
+  '강사현황': 'https://varon2026.github.io/varon-links/instructor-hiring.html',
+  '강사채용해임현황': 'https://varon2026.github.io/varon-links/instructor-hiring.html',
+  '분원정보 및 계정관리': 'https://varon2026.github.io/varon-links/branch-info.html',
+  '분원정보 및 ID관리': 'https://varon2026.github.io/varon-links/branch-info.html',
+  '분원정보 및 계정 관리': 'https://varon2026.github.io/varon-links/branch-info.html',
+};
+function escapeHtml(s){
+  if(s===null||s===undefined) return '';
+  return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+// 텍스트 안의 URL과 알려진 키워드를 클릭 가능한 링크로 바꿔서 반환 (나머지 텍스트는 그대로, 줄바꿈은 <br>)
+function linkify(text){
+  if(!text) return '-';
+  let out = escapeHtml(text);
+  out = out.replace(/(https?:\/\/[^\s]+)/g, url => `<a href="${url}" target="_blank" rel="noopener">${url} ↗</a>`);
+  Object.keys(LINK_MAP).forEach(kw => {
+    if(out.includes(kw) && !out.includes(`>${kw}<`)){
+      const re = new RegExp(kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g');
+      out = out.replace(re, `<a href="${LINK_MAP[kw]}" target="_blank" rel="noopener">${kw} ↗</a>`);
+    }
+  });
+  return out.replace(/\n/g, '<br>');
+}
+
+/* ---------------- 탭/필드 정의 ---------------- */
+const TABS = [
+  { key:'permit', label:'1. 대관업무',
+    fields:[
+      {k:'category', label:'분류'}, {k:'task', label:'업무명'}, {k:'cycle', label:'처리주기'},
+      {k:'agency', label:'관할기관/방법'}, {k:'deadline', label:'마감/시점'}, {k:'status', label:'현재현황'},
+      {k:'caution', label:'인계 주의사항', type:'textarea'}, {k:'docLoc', label:'서류 보관위치'},
+    ],
+    titleField:'task', tagField:'category' },
+  { key:'facility', label:'2. 시설관리',
+    fields:[
+      {k:'branch', label:'분원'}, {k:'category', label:'구분 (냉난방/청소/네트워크/소방/기타)'},
+      {k:'vendor', label:'담당업체'}, {k:'contact', label:'연락처'},
+      {k:'recent', label:'최근 내용', type:'textarea'}, {k:'recentDate', label:'최근/다음 일자'}, {k:'note', label:'비고'},
+    ],
+    titleField:'branch', tagField:'category' },
+  { key:'supplies', label:'3. 비품관리',
+    fields:[
+      {k:'category', label:'구분 (소모품/교재/샘플)'}, {k:'content', label:'내용', type:'textarea'},
+      {k:'location', label:'위치/링크'}, {k:'note', label:'비고'},
+    ],
+    titleField:'category', tagField:'category' },
+  { key:'contract', label:'4. 계약관리',
+    fields:[
+      {k:'type', label:'계약유형'}, {k:'vendor', label:'업체명'}, {k:'branch', label:'분원'},
+      {k:'period', label:'계약기간'}, {k:'monthly', label:'월비용'}, {k:'manager', label:'담당자'},
+      {k:'phone', label:'연락처'}, {k:'note', label:'비고'},
+    ],
+    titleField:'vendor', tagField:'type' },
+  { key:'branchinfo', label:'5. 분원정보·ID관리',
+    fields:[
+      {k:'category', label:'구분 (기본정보/사이트ID/출입보안)'}, {k:'name', label:'항목/서비스명'},
+      {k:'branch', label:'분원'}, {k:'url', label:'사이트주소'}, {k:'account', label:'아이디'}, {k:'password', label:'비밀번호'},
+      {k:'note', label:'담당자·비고', type:'textarea'},
+    ],
+    titleField:'name', tagField:'category' },
+  { key:'etc', label:'6. 기타업무',
+    fields:[
+      {k:'category', label:'구분'}, {k:'name', label:'문서명/제목'}, {k:'content', label:'내용', type:'textarea'},
+      {k:'cycle', label:'주기'}, {k:'target', label:'대상'}, {k:'location', label:'파일위치/링크'},
+    ],
+    titleField:'name', tagField:'category' },
+  { key:'todo', label:'7. 미완료업무',
+    fields:[
+      {k:'task', label:'업무명'}, {k:'category', label:'분류'}, {k:'status', label:'현재상태'},
+      {k:'deadline', label:'마감일'}, {k:'priority', label:'우선순위 (상/중/하)'},
+      {k:'action', label:'인수자 조치사항', type:'textarea'}, {k:'note', label:'비고'},
+    ],
+    titleField:'task', tagField:'priority' },
+  { key:'contact', label:'8. 긴급연락처',
+    fields:[
+      {k:'category', label:'구분'}, {k:'org', label:'업체·기관명'}, {k:'manager', label:'담당자'},
+      {k:'phone', label:'전화번호'}, {k:'email', label:'이메일'}, {k:'note', label:'비고', type:'textarea'},
+    ],
+    titleField:'org', tagField:'category' },
+];
+
+const firebaseConfig = {
+  apiKey: "AIzaSyACokruLFwbkCpxriOdQgVZAQfryYBmUxM",
+  authDomain: "baron-shuttle-ops.firebaseapp.com",
+  projectId: "baron-shuttle-ops",
+  storageBucket: "baron-shuttle-ops.firebasestorage.app",
+  messagingSenderId: "278466071248",
+  appId: "1:278466071248:web:e22df780d05e6b46772cd5"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const COL = 'ga_handbook';
+
+let activeTab = 'permit';
+let state = {}; // { tabKey: [rows] }
+let editingId = null;
+
+function tabDef(key){ return TABS.find(t=>t.key===key); }
+
+/* ---------------- 초기 시드 데이터 (인수인계서 원본 반영) ---------------- */
+const SEED = {
+  permit: [
+    {category:'어린이통학버스', task:'어린이통학버스신고필증', cycle:'수시', agency:'관할 경찰서', deadline:'차량관련 변경발생 즉시', status:'', caution:'변경사항 7일 이내 신고 의무', docLoc:''},
+    {category:'어린이통학버스', task:'운행일지', cycle:'연 4회', agency:'학교안전지원시스템(schoolsafe24.or.kr)', deadline:'분기 마다', status:'장안 미입력', caution:'분원별 입력확인 필요', docLoc:''},
+    {category:'교습비', task:'교습비 등록·변경', cycle:'수시', agency:'관할 교육지원청/직접방문', deadline:'변경 전 신고', status:'완료', caution:'미신고 과태료 주의', docLoc:''},
+    {category:'범죄경력조회', task:'성범죄및아동학대범죄전력조회', cycle:'채용 시', agency:'범죄경력회보서 발급시스템(crims.police.go.kr)', deadline:'채용 전', status:'', caution:'분원별 보관확인 필요', docLoc:''},
+    {category:'강사', task:'강사 채용/해임 신고', cycle:'채용/해임 시', agency:'관할 교육지원청/온라인(neis.go.kr)', deadline:'채용/해임 후 즉시', status:'', caution:'', docLoc:''},
+    {category:'법정의무교육', task:'1.아동학대 신고의무자\n2.장애인학대 신고의무자\n3.긴급복지 신고의무자', cycle:'연 1회', agency:'교육지원청/온라인', deadline:'연말 이전', status:'', caution:'', docLoc:'총무/대관/법정의무교육 폴더'},
+    {category:'법정의무교육', task:'4.어린이통학버스 안전교육', cycle:'2년에 1회', agency:'교육지원청/온라인', deadline:'연말 이전', status:'', caution:'', docLoc:''},
+    {category:'법정의무교육', task:'5.어린이이용시설종사자안전교육', cycle:'연 1회', agency:'한국영유아보육교육진흥원-행안부/온라인 및 집합(실습)', deadline:'지정기간/장소', status:'안내 필요', caution:'2시간 실습(온라인)/2시간 실습 https://lms.educare.or.kr/lms/intro.edu > 개설강좌 > 어린이이용시설종사자용 > 집합교육', docLoc:''},
+    {category:'법정의무교육', task:'6.학원설립/운영자연수', cycle:'연 1회', agency:'교육지원청/온라인', deadline:'지정 기간', status:'완료', caution:'ggdacaedu2026.co.kr', docLoc:''},
+    {category:'지도점검', task:'학원지도점검', cycle:'연 1회 이상 (수시)', agency:'관할 교육청·노동청 등', deadline:'점검 통보 후 즉시 대비 및 수시대비', status:'', caution:'점검 결과서 및 시정조치 보관', docLoc:'총무/대관/지도점검 폴더'},
+  ],
+  facility: [
+    {branch:'전체', category:'분원시설특이사항', vendor:'', contact:'', recent:'시설관리대장 참고', recentDate:'', note:''},
+    {branch:'전체', category:'냉난방기', vendor:'', contact:'', recent:'시설관리대장 내 냉난방기 관리 참고', recentDate:'', note:''},
+    {branch:'전체', category:'청소상태', vendor:'', contact:'', recent:'청소관리대장 참고', recentDate:'', note:''},
+    {branch:'장안', category:'네트워크/통신', vendor:'LG U+', contact:'김정하 010-3472-1992', recent:'', recentDate:'', note:''},
+    {branch:'서수원', category:'소방', vendor:'사설점검업체', contact:'', recent:'C,J강의실, 2층복도 교체', recentDate:'4.28', note:''},
+    {branch:'운정2', category:'소방', vendor:'사설점검업체', contact:'', recent:'상담실 감지기 수리, 피난구유도등 설치, 통로유도등 예비전원 불량 수리', recentDate:'5.28', note:''},
+  ],
+  supplies: [
+    {category:'소모품', content:'소모품재고관리 앱', location:'', note:''},
+    {category:'교재', content:'교재관리 앱 (별도 확인 필요)', location:'', note:'교재관리 앱 미구축 시 총무팀 문의'},
+    {category:'샘플', content:'샘플목록: 미작성 / 샘플 위치: 바론 창고', location:'', note:'목록 작성 필요'},
+  ],
+  contract: [
+    {type:'청소용역', vendor:'써니브라이트', branch:'장안', period:'25.9.1-26.8.31', monthly:'1,250,000', manager:'배영재', phone:'010-5508-4032', note:''},
+    {type:'청소용역', vendor:'써니브라이트', branch:'서수원', period:'26.1.5-27.1.4', monthly:'1,210,000', manager:'배영재', phone:'010-5508-4032', note:''},
+    {type:'청소용역', vendor:'박경진 여사님', branch:'수원', period:'', monthly:'', manager:'', phone:'010-5544-5968', note:''},
+    {type:'청소용역', vendor:'청수', branch:'운정1', period:'', monthly:'', manager:'지인선', phone:'010-2767-7493', note:''},
+    {type:'청소용역', vendor:'청수', branch:'운정2', period:'', monthly:'', manager:'지인선', phone:'010-2767-7493', note:''},
+    {type:'청소용역', vendor:'디씨티엔', branch:'남동탄', period:'26.7.1-27.6.30', monthly:'990,000', manager:'김지범', phone:'010-8725-2026', note:''},
+    {type:'렌탈(정수기)', vendor:'SK매직', branch:'서수원', period:'26.3.31부터 5년', monthly:'17,900', manager:'함정미', phone:'010-4081-5339', note:''},
+    {type:'렌탈(정수기)', vendor:'SK매직', branch:'전체', period:'', monthly:'', manager:'', phone:'', note:''},
+    {type:'렌탈(복합기)', vendor:'미래사무기기', branch:'수원권역', period:'', monthly:'', manager:'김우경', phone:'010-2354-4922', note:''},
+    {type:'렌탈(복합기)', vendor:'종합OA렌탈서비스', branch:'운정1', period:'', monthly:'', manager:'김진용', phone:'010-3351-7079', note:''},
+    {type:'렌탈(PC)', vendor:'위즈시스템/모나미', branch:'전체', period:'26.5까지', monthly:'', manager:'김승민', phone:'02-6906-1122', note:'전분원 계약 만료'},
+    {type:'차량기사', vendor:'', branch:'전체', period:'확인필요', monthly:'', manager:'', phone:'', note:'갱신필요'},
+    {type:'차량기사', vendor:'', branch:'운정1, 2', period:'26.4경', monthly:'', manager:'', phone:'', note:'갱신완료'},
+    {type:'차량동승보호자', vendor:'', branch:'전체', period:'확인필요', monthly:'', manager:'', phone:'', note:'갱신필요'},
+    {type:'차량동승보호자', vendor:'', branch:'운정1, 2', period:'26.4경', monthly:'', manager:'', phone:'', note:'갱신완료'},
+    {type:'차량동승보호자', vendor:'', branch:'수원', period:'26.6경', monthly:'', manager:'', phone:'', note:'갱신완료'},
+    {type:'차량동승보호자', vendor:'', branch:'서수원', period:'26.3경', monthly:'', manager:'', phone:'', note:'우옥희 외 갱신 완료'},
+  ],
+  branchinfo: [
+    {category:'기본정보', name:'분원 기본정보(주소/전화/사업자번호 등)', branch:'전체', url:'', account:'', password:'', note:'다우오피스 문서관리/대관/분원정보 및 계정관리 참고'},
+    {category:'사이트ID', name:'나이스대국민서비스', branch:'분원별', url:'https://neis.go.kr', account:'분원장', password:'개인 인증', note:'강사 채용/해임 신고용. 서수원-김근정, 장안-장완(해지필요). 온라인등록신청서 요청 중(수원4, 화성1, 운정2)'},
+    {category:'사이트ID', name:'범죄경력조회서 발급시스템', branch:'분원별', url:'https://crims.police.go.kr', account:'분원장(시설관리자)', password:'', note:'범죄경력조회용'},
+    {category:'사이트ID', name:'학교안전지원시스템', branch:'분원별', url:'https://schoolsafe24.or.kr', account:'분원별', password:'분원별', note:'셔틀/기사/동승자 정보 및 운행일지 입력용. 다우 학원정보 참고'},
+    {category:'사이트ID', name:'네이버블로그', branch:'분원별', url:'', account:'홍보팀/분원', password:'', note:'홍보용. 분원별 로그인 정보 파악 필요'},
+    {category:'사이트ID', name:'옐로우버스 전체 관리용 웹', branch:'전체', url:'https://yellowbus.io/login', account:'solie624@varonnetworks.com', password:'@varon2024@', note:'셔틀/탑승자 관리'},
+    {category:'사이트ID', name:'구글시트', branch:'전체', url:'', account:'suwonjls@gmail.com', password:'*suwon1027!', note:'셔틀/시설/청소 등. 2단계 인증으로 재접속 번거로움'},
+    {category:'사이트ID', name:'교통안전교육센터', branch:'전체', url:'https://trafficedu.korea.or.kr', account:'varon1027', password:'jls2023@', note:'대표님 교육용'},
+    {category:'사이트ID', name:'바론 와이파이', branch:'바론', url:'', account:'B-701(5G)', password:'a0312992900', note:''},
+    {category:'출입보안', name:'KT 텔레캅', branch:'장안', url:'https://kttelecop.co.kr', account:'varon202312', password:'@varon2992900@', note:'업무담당자: 장대현 팀장(010-7290-1240). 앱다운로드-varon202312로 서비스요청-승인 후 열람 가능'},
+  ],
+  etc: [
+    {category:'상권분석', name:'아산탕정 상권분석 및 통계', content:'', cycle:'', target:'', location:'총무/바론 폴더'},
+    {category:'기타서류', name:'바론 법인인감', content:'인감증명서 발급', cycle:'수시', target:'수지구청', location:'법인인감카드로 무인발급기 이용, 비밀번호(카드에 표시)'},
+    {category:'기타서류', name:'대표 개인인감', content:'인감증명서 발급', cycle:'수시', target:'주민센터', location:'위임장(위임장 양식 다운받아 직접작성-현장작성 불가), 대표 신분증 지참 방문'},
+    {category:'보고서', name:'품의서', content:'계약/구매 등', cycle:'수시', target:'본부장', location:'총무/보고'},
+    {category:'보고서', name:'소모품현황', content:'바론입/출, 분원입/출 현황', cycle:'주 1회', target:'본부장', location:'총무링크'},
+    {category:'보고서', name:'청소관리현황', content:'바론 및 분원 청소 상태 점검 현황', cycle:'주 1회', target:'본부장', location:'총무링크'},
+    {category:'보고서', name:'시설관리현황', content:'시설관련 요청 및 처리 현황', cycle:'주 1회', target:'본부장', location:'총무링크'},
+    {category:'보고서', name:'차량현황', content:'분원 차량 현황', cycle:'주 1회', target:'본부장', location:'구글시트링크'},
+    {category:'보고서', name:'강사현황', content:'분원 강사채용/해임 현황', cycle:'주 1회', target:'본부장', location:'총무링크'},
+    {category:'보고서', name:'기타보고서', content:'특이사항 및 기타 보고', cycle:'수시', target:'본부장', location:'총무/보고'},
+  ],
+  todo: [
+    {task:'장안 에어컨수리', category:'시설', status:'7.2 수리', deadline:'', priority:'하', action:'수리 후 한달 지켜보고 수리비 청구하기로 함', note:'드림에어컨설팅(박상민)'},
+    {task:'강사채용/해임', category:'대관', status:'진행 중', deadline:'7.27', priority:'상', action:'남동탄, 서수원 확인', note:''},
+    {task:'차량기사/동승자 계약서 갱신', category:'대관', status:'분원장/분원행정 알림', deadline:'', priority:'상', action:'필요서류 체크리스트', note:''},
+    {task:'수원 중등관 C강의실 모니터', category:'비품', status:'파손', deadline:'', priority:'중', action:'구매 여부 확인', note:'현재 A,B강의실만 사용중'},
+    {task:'장안 비상등', category:'시설', status:'전구제거>재설치필요', deadline:'', priority:'중', action:'거의 모든 시설 해당', note:''},
+    {task:'운정1 방충망', category:'시설', status:'사이즈 측정', deadline:'', priority:'중', action:'업체/온라인 주문 설치', note:''},
+    {task:'장안 벽지뜯김', category:'시설', status:'찢어짐', deadline:'', priority:'중', action:'도배', note:'도배지(창고)'},
+    {task:'행사물품 전달', category:'기타', status:'서수원 보관>운정 전달필요', deadline:'', priority:'상', action:'운정: 8/4-7, 서수원: 8/10-11, 남동탄: 8/13-14', note:'슬러시기계/팝콘기계'},
+    {task:'서수원 여분모니터 DID활용', category:'비품', status:'서수원 4층 보관', deadline:'', priority:'중', action:'거치대 구입', note:''},
+    {task:'어린이이용시설 종사자안전교육', category:'대관', status:'분원공지', deadline:'실습 장소별 기한', priority:'상', action:'실습교육 장소 및 마감일 정해져 있어 주의요망', note:''},
+    {task:'나이스온라인사용자등록', category:'대관', status:'서류준비중', deadline:'', priority:'중', action:'', note:''},
+    {task:'화분관리', category:'시설', status:'남동탄, 운정1, 2, 수원, 바론', deadline:'', priority:'중', action:'한달 1번 물 흠뻑 주기', note:''},
+    {task:'서류', category:'대관', status:'대치동 본사요청(법인인감, 사용인감계, 위임장, 각종신청서 등)', deadline:'', priority:'중', action:'바론 인감증명서(인감카드-수지구청)', note:''},
+    {task:'바론청소', category:'시설', status:'청소관리대장 기록', deadline:'', priority:'중', action:'바닥, 책상, 베란다(테이블,창틀,재떨이), 탕비실, 휴지통, 분리수거', note:''},
+  ],
+  contact: [
+    {category:'시설수리(전기)', org:'개인', manager:'박병화', phone:'010-3788-7556', email:'', note:''},
+    {category:'시설수리(설비)', org:'디자인가을', manager:'최충호', phone:'010-8697-4568', email:'', note:''},
+    {category:'냉난방기', org:'드림에어컨설팅', manager:'박상민', phone:'010-2306-7544', email:'', note:''},
+    {category:'네트워크·통신', org:'파주와이드넷', manager:'김정하', phone:'010-3472-1992', email:'', note:'전체분원'},
+    {category:'소방', org:'수원소방청', manager:'', phone:'031-80129322', email:'', note:''},
+    {category:'청소용역', org:'써니브라이트', manager:'배영재', phone:'010-5508-4032', email:'', note:'대표, 장안/서수원'},
+    {category:'청소용역', org:'디씨티엔', manager:'김지범', phone:'010-8725-2076', email:'', note:'팀장, 남동탄'},
+    {category:'보안업체', org:'KT텔레캅', manager:'장대현', phone:'010-7290-1240', email:'', note:'6개분원 통합 관리'},
+    {category:'렌탈(정수기)', org:'SK인텔릭스(매직)', manager:'함정미', phone:'010-4081-5339', email:'', note:'서수원/전체'},
+    {category:'렌탈(복합기)', org:'미래사무기기', manager:'김우경', phone:'010-2354-4922', email:'', note:''},
+    {category:'렌탈(복합기)', org:'캐논OA렌탈 서비스', manager:'김진용', phone:'010-3351-7079', email:'', note:''},
+    {category:'관할 교육청', org:'수원교육지원청 / 파주교육지원청 / 화성오산교육지원청', manager:'', phone:'다우 대관업무 매뉴얼 참고', email:'', note:'교습비등변경등록신청, 강사채용해임'},
+    {category:'관할 경찰서', org:'', manager:'', phone:'다우 대관업무 매뉴얼 참고', email:'', note:'어린이통학버스'},
+    {category:'분원관리소', org:'장안 정연메이저', manager:'', phone:'031-246-8523 / 010-8227-8524', email:'', note:''},
+    {category:'분원관리소', org:'서수원 하늘유치원', manager:'국훈철', phone:'010-4191-1896', email:'', note:''},
+    {category:'분원관리소', org:'수원 신동 드림타워', manager:'', phone:'010-6725-5315', email:'', note:''},
+    {category:'분원관리소', org:'수원 중등관 TGE', manager:'', phone:'010-4105-0732', email:'', note:''},
+    {category:'분원관리소', org:'운정1 동광위너스', manager:'박용순', phone:'010-5318-3348', email:'', note:'관리소장'},
+    {category:'분원관리소', org:'운정2 명품프라자', manager:'고강혁', phone:'010-7343-3948', email:'', note:'관리소장'},
+    {category:'분원관리소', org:'남동탄 트램프라자', manager:'조학로', phone:'010-3862-4471', email:'', note:'관리소장'},
+  ],
+};
+
+async function boot(){
+  renderTabs();
+  await loadAllTabs();
+  renderCurrentTab();
+}
+
+function renderTabs(){
+  const bar = document.getElementById('tabsBar');
+  bar.innerHTML = TABS.map(t => `<button class="${t.key===activeTab?'active':''}" data-tab="${t.key}">${t.label}</button>`).join('');
+  bar.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      activeTab = btn.dataset.tab;
+      editingId = null;
+      document.getElementById('globalSearch').value = '';
+      toggleForm(false);
+      renderTabs();
+      renderCurrentTab();
+    });
+  });
+}
+
+async function loadAllTabs(){
+  const snap = await db.collection(COL).get();
+  const loaded = {};
+  snap.docs.forEach(d => { loaded[d.id] = d.data().rows || []; });
+  TABS.forEach(t => {
+    if(loaded[t.key] && loaded[t.key].length){
+      state[t.key] = loaded[t.key];
+    }else if(!loaded[t.key]){
+      // 처음 실행: 인수인계서 원본 데이터로 시드
+      state[t.key] = (SEED[t.key]||[]).map(r=>({ id: cryptoId(), ...r }));
+      db.collection(COL).doc(t.key).set({ rows: state[t.key] });
+    }else{
+      state[t.key] = [];
+    }
+  });
+}
+function cryptoId(){ return 'id_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8); }
+async function saveTab(key){
+  await db.collection(COL).doc(key).set({ rows: state[key] });
+}
+
+/* ---------------- 목록 렌더 ---------------- */
+function renderCurrentTab(){
+  const def = tabDef(activeTab);
+  const kw = document.getElementById('globalSearch').value.trim().toLowerCase();
+  let rows = state[activeTab] || [];
+  if(kw){
+    rows = rows.filter(r => def.fields.some(f => (r[f.k]||'').toString().toLowerCase().includes(kw)));
+  }
+  const wrap = document.getElementById('listWrap');
+  if(!rows.length){ wrap.innerHTML = '<div class="empty">등록된 항목이 없습니다.</div>'; return; }
+
+  wrap.innerHTML = rows.map(r => {
+    const title = r[def.titleField] || '(제목없음)';
+    const tagVal = def.tagField ? r[def.tagField] : '';
+    const tagClass = def.key==='todo' ? `priority-${r.priority||''}` : '';
+    return `
+    <div class="card">
+      <div class="card-top">
+        <div class="card-title">${escapeHtml(title)}</div>
+        ${tagVal ? `<span class="card-tag ${tagClass}">${escapeHtml(tagVal)}</span>` : ''}
+      </div>
+      ${def.fields.filter(f=>f.k!==def.titleField).map(f => {
+        const val = r[f.k];
+        if(!val) return '';
+        return `<div class="card-row"><b>${f.label.split('(')[0].trim()}</b>${linkify(val)}</div>`;
+      }).join('')}
+      <div class="card-actions">
+        <button class="secondary small" onclick="editRow('${r.id}')">✏️ 수정</button>
+        <button class="danger small" onclick="deleteRow('${r.id}')">삭제</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------------- 등록/수정 폼 ---------------- */
+function toggleForm(force){
+  const box = document.getElementById('formBox');
+  if(force === false){ box.classList.remove('open'); editingId=null; return; }
+  if(!box.classList.contains('open')){
+    buildForm();
+    box.classList.add('open');
+  }else{
+    box.classList.remove('open');
+    editingId = null;
+  }
+}
+function buildForm(existing){
+  const def = tabDef(activeTab);
+  const box = document.getElementById('formBox');
+  box.innerHTML = `
+    <div class="form-grid">
+      ${def.fields.map(f => `
+        <label style="${f.type==='textarea'?'grid-column:1/-1;':''}">
+          ${f.label}
+          ${f.type==='textarea'
+            ? `<textarea id="gf_${f.k}">${existing?escapeHtml(existing[f.k]||''):''}</textarea>`
+            : `<input type="text" id="gf_${f.k}" value="${existing?escapeHtml(existing[f.k]||''):''}">`}
+        </label>`).join('')}
+    </div>
+    <div class="form-actions">
+      <button class="primary" onclick="submitForm()">${existing?'수정 저장':'등록'}</button>
+      <button class="secondary" onclick="toggleForm(false)">취소</button>
+    </div>
+  `;
+}
+function editRow(id){
+  const def = tabDef(activeTab);
+  const r = (state[activeTab]||[]).find(x=>x.id===id);
+  if(!r) return;
+  editingId = id;
+  const box = document.getElementById('formBox');
+  buildForm(r);
+  box.classList.add('open');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+async function submitForm(){
+  const def = tabDef(activeTab);
+  const rec = {};
+  def.fields.forEach(f => { rec[f.k] = document.getElementById('gf_'+f.k).value.trim(); });
+  if(!rec[def.titleField]){ alert(`${def.fields.find(f=>f.k===def.titleField).label}은(는) 필수입니다.`); return; }
+
+  if(editingId){
+    const idx = state[activeTab].findIndex(x=>x.id===editingId);
+    if(idx>=0) state[activeTab][idx] = { id: editingId, ...rec };
+  }else{
+    state[activeTab].push({ id: cryptoId(), ...rec });
+  }
+  await saveTab(activeTab);
+  toggleForm(false);
+  renderCurrentTab();
+}
+async function deleteRow(id){
+  if(!confirm('이 항목을 삭제하시겠습니까?')) return;
+  state[activeTab] = state[activeTab].filter(x=>x.id!==id);
+  await saveTab(activeTab);
+  renderCurrentTab();
+}
+
+/* ---------------- PDF 내보내기 (인쇄 화면 → 브라우저 인쇄로 PDF 저장) ---------------- */
+function buildPrintTable(def, rows){
+  if(!rows.length){
+    return `<p style="font-size:12px;color:var(--muted);">등록된 항목이 없습니다.</p>`;
+  }
+  return `<table class="print-table"><thead><tr>
+    ${def.fields.map(f=>`<th>${escapeHtml(f.label.split('(')[0].trim())}</th>`).join('')}
+  </tr></thead><tbody>
+    ${rows.map(r => `<tr>${def.fields.map(f=>`<td>${linkify(r[f.k])}</td>`).join('')}</tr>`).join('')}
+  </tbody></table>`;
+}
+function exportPdf(allTabs){
+  const today = new Date().toLocaleDateString('ko-KR');
+  const area = document.getElementById('printArea');
+
+  if(!allTabs){
+    const def = tabDef(activeTab);
+    const kw = document.getElementById('globalSearch').value.trim().toLowerCase();
+    let rows = state[activeTab] || [];
+    if(kw) rows = rows.filter(r => def.fields.some(f => (r[f.k]||'').toString().toLowerCase().includes(kw)));
+    area.innerHTML = `
+      <div class="print-page">
+        <div class="print-title">총무업무 — ${def.label}</div>
+        <div class="print-sub">바론네트웍스(주) 총무팀 · 출력일 ${today}${kw?` · 검색어: "${escapeHtml(kw)}"`:''}</div>
+        ${buildPrintTable(def, rows)}
+      </div>`;
+  }else{
+    area.innerHTML = TABS.map(def => `
+      <div class="print-page">
+        <div class="print-title">총무업무</div>
+        <div class="print-sub">바론네트웍스(주) 총무팀 · 출력일 ${today}</div>
+        <div class="print-section-title">${def.label}</div>
+        ${buildPrintTable(def, state[def.key]||[])}
+      </div>`).join('');
+  }
+  window.print();
+}
+</script>
+</body>
+</html>
